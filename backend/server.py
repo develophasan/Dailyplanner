@@ -367,6 +367,7 @@ async def get_daily_plan(plan_id: str, current_user: dict = Depends(get_current_
             "pdfUrl": plan.get("pdfUrl")
         }
     except Exception as e:
+        logger.error(f"Get plan error: {str(e)}")
         raise HTTPException(status_code=404, detail="Invalid plan ID")
 
 @api_router.post("/plans/monthly")

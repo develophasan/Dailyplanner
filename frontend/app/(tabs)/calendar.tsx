@@ -101,7 +101,7 @@ export default function CalendarScreen() {
     // Find plan for selected date
     const planForDate = plans.find(plan => plan.date === day.dateString);
     if (planForDate) {
-      router.push(`/plan-detail?id=${planForDate.id}&type=daily`);
+      router.push(`/plan/${planForDate.id}?type=daily`);
     } else {
       Alert.alert(
         'Plan Oluştur', 

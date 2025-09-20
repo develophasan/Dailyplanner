@@ -538,11 +538,29 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 @api_router.post("/ai/chat")
 async def generate_plan(request: PlanGenerateRequest, current_user: dict = Depends(get_current_user)):
     try:
+        # Get user's default age band and today's date
+        user_age_band = current_user.get("ageDefault", "60_72")
+        today_date = datetime.utcnow().strftime("%Y-%m-%d")
+        
+        # Enhanced system prompt with user context
+        enhanced_system_prompt = f"""{SYSTEM_PROMPT}
+
+**BU PLAN İÇİN ZORUNLU CONTEXT:**
+- **BUGÜNÜN TARİHİ**: {today_date} (bu tarihi kullan)
+- **ÖĞRETMENİN YAŞ GRUBU**: {user_age_band} (bu yaş grubu için plan yap)
+- **ÖĞRETMEN BİLGİLERİ**: {current_user.get('name', 'Öğretmen')} - {current_user.get('school', 'Okul')} - {current_user.get('className', 'Sınıf')}
+
+**OTOMATIK KULLANIM:**
+- Plan tarihini {today_date} olarak ayarla
+- Yaş bandını {user_age_band} olarak ayarla
+- Tema belirtilmemişse güncel eğitim konularından uygun tema seç
+- Tüm etkinlikler birbiriyle tutarlı ve temaya uygun olsun"""
+
         # Initialize LLM chat
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"user_{current_user['_id']}_{datetime.utcnow().isoformat()}",
-            system_message=SYSTEM_PROMPT
+            system_message=enhanced_system_prompt
         ).with_model("openai", "gpt-4o")
         
         # Build conversation history

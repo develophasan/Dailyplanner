@@ -718,21 +718,46 @@ export default function PlanDetail() {
               >
                 <Text style={styles.cancelButtonText}>İptal</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.uploadButton, isUploading && styles.disabledButton]}
-                onPress={pickImage}
-                disabled={isUploading}
-                accessibilityRole="button"
-                {...(Platform.OS === 'web' && {
-                  onClick: pickImage
-                })}
-              >
-                {isUploading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.uploadButtonText}>Fotoğraf Seç</Text>
-                )}
-              </TouchableOpacity>
+              {Platform.OS === 'web' ? (
+                <button
+                  onClick={pickImage}
+                  disabled={isUploading}
+                  style={{
+                    flex: 1,
+                    marginLeft: '10px',
+                    paddingTop: '12px',
+                    paddingBottom: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: isUploading ? '#bdc3c7' : '#3498db',
+                    border: 'none',
+                    cursor: isUploading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {isUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <span style={{ fontSize: '16px', color: '#fff', fontWeight: '500' }}>
+                      Fotoğraf Seç
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.uploadButton, isUploading && styles.disabledButton]}
+                  onPress={pickImage}
+                  disabled={isUploading}
+                  accessibilityRole="button"
+                >
+                  {isUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Fotoğraf Seç</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>

@@ -10,8 +10,8 @@ import sys
 from datetime import datetime, timedelta
 import uuid
 
-# Backend URL from environment
-BACKEND_URL = "https://plan-tester-1.preview.emergentagent.com/api"
+# Backend URL from environment - Updated for local testing as per review request
+BACKEND_URL = "http://localhost:8001/api"
 
 class MaarifPlannerTester:
     def __init__(self):

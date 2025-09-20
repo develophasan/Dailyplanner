@@ -469,17 +469,34 @@ export default function PlanDetail() {
       <View style={styles.tabContent}>
         <View style={styles.portfolioHeader}>
           <Text style={styles.cardTitle}>📸 Etkinlik Portfolyosu</Text>
-          <TouchableOpacity 
-            style={styles.addPhotoButton}
-            onPress={handleAddPortfolio}
-            accessibilityRole="button"
-            {...(Platform.OS === 'web' && {
-              onClick: handleAddPortfolio
-            })}
-          >
-            <Ionicons name="camera" size={20} color="#fff" />
-            <Text style={styles.addPhotoText}>Fotoğraf Ekle</Text>
-          </TouchableOpacity>
+          {Platform.OS === 'web' ? (
+            <button
+              onClick={handleAddPortfolio}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#3498db',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <Ionicons name="camera" size={20} color="#fff" />
+              <span style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginLeft: '6px' }}>
+                Fotoğraf Ekle
+              </span>
+            </button>
+          ) : (
+            <TouchableOpacity 
+              style={styles.addPhotoButton}
+              onPress={handleAddPortfolio}
+              accessibilityRole="button"
+            >
+              <Ionicons name="camera" size={20} color="#fff" />
+              <Text style={styles.addPhotoText}>Fotoğraf Ekle</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isPortfolioLoading ? (

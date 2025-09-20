@@ -8,7 +8,7 @@ import requests
 import json
 import uuid
 
-BACKEND_URL = "https://dailyplanner-8.preview.emergentagent.com/api"
+BACKEND_URL = "https://plan-tester-1.preview.emergentagent.com/api"
 
 class EdgeCaseTester:
     def __init__(self):

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import uuid
 
 # Backend URL from environment
-BACKEND_URL = "https://dailyplanner-8.preview.emergentagent.com/api"
+BACKEND_URL = "https://plan-tester-1.preview.emergentagent.com/api"
 
 class MaarifPlannerTester:
     def __init__(self):

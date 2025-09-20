@@ -7,7 +7,7 @@ import requests
 import json
 import uuid
 
-BACKEND_URL = "https://dailyplanner-8.preview.emergentagent.com/api"
+BACKEND_URL = "https://plan-tester-1.preview.emergentagent.com/api"
 
 def test_invalid_token_debug():
     """Debug the invalid token test"""

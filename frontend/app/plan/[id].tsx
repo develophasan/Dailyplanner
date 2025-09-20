@@ -170,21 +170,30 @@ export default function PlanDetail() {
   const pickImage = async () => {
     if (Platform.OS === 'web') {
       // Web için HTML file input kullan
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = (event: any) => {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e: any) => {
-            const base64 = e.target.result.split(',')[1]; // Remove data:image/jpeg;base64, prefix
-            uploadPhoto(base64);
-          };
-          reader.readAsDataURL(file);
+      try {
+        const input = (document as any).createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (event: any) => {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e: any) => {
+              const base64 = e.target.result.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+              uploadPhoto(base64);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      } catch (error) {
+        console.error('Web file picker error:', error);
+        if (Platform.OS === 'web') {
+          alert('Fotoğraf seçme özelliği bu tarayıcıda desteklenmiyor');
+        } else {
+          Alert.alert('Hata', 'Fotoğraf seçme işlemi başarısız');
         }
-      };
-      input.click();
+      }
       return;
     }
 

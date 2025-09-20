@@ -344,6 +344,106 @@ export default function Chat() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Plan Preview Modal */}
+      <Modal
+        visible={showPreview}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowPreview(false)}>
+              <Ionicons name="close" size={24} color="#3498db" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Plan Önizleme</Text>
+            <TouchableOpacity onPress={savePlan} disabled={isLoading}>
+              <Text style={styles.modalSaveText}>Kaydet</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {currentResponse && (
+              <View>
+                <View style={styles.previewSection}>
+                  <Text style={styles.previewSectionTitle}>Plan Bilgileri</Text>
+                  <Text style={styles.previewItem}>📅 Tarih: {currentResponse.date || 'Bugün'}</Text>
+                  <Text style={styles.previewItem}>👶 Yaş Bandı: {currentResponse.ageBand || '60-72 Ay'}</Text>
+                  <Text style={styles.previewItem}>📝 Tür: {currentResponse.type === 'daily' ? 'Günlük Plan' : 'Aylık Plan'}</Text>
+                </View>
+
+                {currentResponse.domainOutcomes && currentResponse.domainOutcomes.length > 0 && (
+                  <View style={styles.previewSection}>
+                    <Text style={styles.previewSectionTitle}>Hedeflenen Alanlar</Text>
+                    {currentResponse.domainOutcomes.map((outcome: any, index: number) => (
+                      <View key={index} style={styles.outcomeContainer}>
+                        <Text style={styles.outcomeCode}>• {outcome.code}</Text>
+                        {outcome.indicators && outcome.indicators.length > 0 && (
+                          <View style={styles.indicatorsContainer}>
+                            {outcome.indicators.map((indicator: string, idx: number) => (
+                              <Text key={idx} style={styles.indicator}>  - {indicator}</Text>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {currentResponse.blocks?.startOfDay && (
+                  <View style={styles.previewSection}>
+                    <Text style={styles.previewSectionTitle}>Güne Başlama</Text>
+                    <Text style={styles.previewText}>{currentResponse.blocks.startOfDay}</Text>
+                  </View>
+                )}
+
+                {currentResponse.blocks?.activities && currentResponse.blocks.activities.length > 0 && (
+                  <View style={styles.previewSection}>
+                    <Text style={styles.previewSectionTitle}>Etkinlikler</Text>
+                    {currentResponse.blocks.activities.map((activity: any, index: number) => (
+                      <View key={index} style={styles.activityContainer}>
+                        <Text style={styles.activityTitle}>{index + 1}. {activity.title}</Text>
+                        {activity.materials && activity.materials.length > 0 && (
+                          <View>
+                            <Text style={styles.activitySubtitle}>Materyaller:</Text>
+                            {activity.materials.map((material: string, idx: number) => (
+                              <Text key={idx} style={styles.activityItem}>• {material}</Text>
+                            ))}
+                          </View>
+                        )}
+                        {activity.steps && activity.steps.length > 0 && (
+                          <View>
+                            <Text style={styles.activitySubtitle}>Adımlar:</Text>
+                            {activity.steps.map((step: string, idx: number) => (
+                              <Text key={idx} style={styles.activityItem}>{idx + 1}. {step}</Text>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {currentResponse.blocks?.assessment && currentResponse.blocks.assessment.length > 0 && (
+                  <View style={styles.previewSection}>
+                    <Text style={styles.previewSectionTitle}>Değerlendirme</Text>
+                    {currentResponse.blocks.assessment.map((item: string, index: number) => (
+                      <Text key={index} style={styles.previewItem}>• {item}</Text>
+                    ))}
+                  </View>
+                )}
+
+                {currentResponse.notes && (
+                  <View style={styles.previewSection}>
+                    <Text style={styles.previewSectionTitle}>Notlar</Text>
+                    <Text style={styles.previewText}>{currentResponse.notes}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }

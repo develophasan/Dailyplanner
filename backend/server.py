@@ -33,7 +33,7 @@ db = client[DB_NAME]
 # FastAPI app
 app = FastAPI(title="MaarifPlanner API", version="1.0.0")
 
-# CORS Configuration - COMPLETE RESET
+# CORS Configuration - COMPLETE RESET - MOVED TO TOP
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
@@ -42,6 +42,11 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"]  # Expose all headers
 )
+
+# Global OPTIONS handler for all routes
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return {"message": "OK"}
 
 api_router = APIRouter(prefix="/api")
 

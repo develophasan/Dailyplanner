@@ -172,7 +172,7 @@ export default function ChatScreen() {
           date: planPreview.date,
           ageBand: planPreview.ageBand,
           title: planPreview.theme || 'AI Destekli Günlük Plan',
-          planJson: planPreview, // This should be the full plan data
+          planJson: planPreview.fullPlanData || planPreview, // Use full plan data if available
         }),
       });
 

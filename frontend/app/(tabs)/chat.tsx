@@ -173,7 +173,10 @@ export default function Chat() {
   };
 
   const savePlan = async () => {
-    if (!currentResponse || !currentResponse.finalize) return;
+    if (!currentResponse || !currentResponse.finalize) {
+      Alert.alert('Hata', 'Plan hazır değil. Lütfen AI ile plan oluşturmayı tamamlayın.');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -183,15 +186,48 @@ export default function Chat() {
         return;
       }
 
-      // Prepare plan data with proper defaults and validation
-      const planData = {
-        date: currentResponse.date || new Date().toISOString().split('T')[0],
-        ageBand: currentResponse.ageBand || user?.ageDefault || '60_72',
-        planJson: currentResponse,
-        title: `Günlük Plan - ${currentResponse.date || new Date().toLocaleDateString('tr-TR')}`,
+      // Generate proper date - ensure it's always YYYY-MM-DD format
+      const today = new Date();
+      const planDate = currentResponse.date || today.toISOString().split('T')[0];
+      
+      // Ensure ageBand is valid
+      const validAgeBands = ['36_48', '48_60', '60_72'];
+      let ageBand = currentResponse.ageBand || user?.ageDefault || '60_72';
+      if (!validAgeBands.includes(ageBand)) {
+        ageBand = '60_72'; // fallback to default
+      }
+
+      // Clean and validate planJson structure
+      const cleanPlanJson = {
+        ...currentResponse,
+        date: planDate,
+        ageBand: ageBand,
+        type: currentResponse.type || 'daily',
+        finalize: true,
+        // Ensure essential structure exists
+        blocks: currentResponse.blocks || {
+          startOfDay: '',
+          activities: [],
+          assessment: []
+        },
+        domainOutcomes: currentResponse.domainOutcomes || [],
       };
 
-      console.log('Saving plan data:', planData);
+      // Prepare plan data with proper validation
+      const planData = {
+        date: planDate,
+        ageBand: ageBand,
+        planJson: cleanPlanJson,
+        title: `Günlük Plan - ${planDate}`,
+      };
+
+      console.log('💾 Saving plan data:', {
+        date: planData.date,
+        ageBand: planData.ageBand,
+        title: planData.title,
+        hasBlocks: !!planData.planJson.blocks,
+        hasOutcomes: planData.planJson.domainOutcomes?.length || 0
+      });
 
       const response = await fetch(`${BACKEND_URL}/api/plans/daily`, {
         method: 'POST',
@@ -203,10 +239,13 @@ export default function Chat() {
       });
 
       const responseData = await response.json();
-      console.log('Plan save response:', response.status, responseData);
+      console.log('📝 Plan save response:', response.status, responseData);
 
       if (response.ok) {
-        Alert.alert('Başarılı', 'Plan kaydedildi!', [
+        // Close preview modal if open
+        setShowPreview(false);
+        
+        Alert.alert('✅ Başarılı', 'Plan başarıyla kaydedildi!', [
           {
             text: 'Planları Görüntüle',
             onPress: () => router.push('/(tabs)/plans'),
@@ -216,7 +255,7 @@ export default function Chat() {
             onPress: () => {
               setMessages([{
                 role: 'assistant',
-                content: 'Yeni bir plan oluşturmak için ne yapmak istiyorsunuz?',
+                content: 'Harika! Yeni bir plan oluşturmak için hangi yaş bandı ve ne tür etkinlikler istiyorsunuz?',
                 timestamp: new Date().toISOString(),
               }]);
               setCurrentResponse(null);
@@ -224,12 +263,12 @@ export default function Chat() {
           },
         ]);
       } else {
-        console.error('Save failed:', responseData);
-        Alert.alert('Hata', `Plan kaydedilemedi: ${responseData.detail || 'Bilinmeyen hata'}`);
+        console.error('❌ Save failed:', responseData);
+        Alert.alert('Hata', `Plan kaydedilemedi: ${responseData.detail || 'Validation hatası'}`);
       }
     } catch (error) {
-      console.error('Save plan error:', error);
-      Alert.alert('Hata', 'Plan kaydedilirken hata oluştu. Lütfen tekrar deneyin.');
+      console.error('💥 Save plan error:', error);
+      Alert.alert('Hata', 'Plan kaydedilirken hata oluştu. İnternet bağlantınızı kontrol edip tekrar deneyin.');
     } finally {
       setIsLoading(false);
     }

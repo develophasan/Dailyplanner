@@ -503,6 +503,10 @@ async def register(user_data: UserCreate):
         }
     }
 
+@api_router.options("/auth/login")
+async def login_options():
+    return {}
+
 @api_router.post("/auth/login")
 async def login(login_data: UserLogin):
     user = await db.users.find_one({"email": login_data.email})

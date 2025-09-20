@@ -753,6 +753,10 @@ async def create_monthly_plan(plan_data: MonthlyPlanCreate, current_user: dict =
         "message": "Monthly plan created successfully"
     }
 
+@api_router.options("/plans/monthly")
+async def plans_monthly_options():
+    return {"message": "OK"}
+
 @api_router.get("/plans/monthly")
 async def get_monthly_plans(current_user: dict = Depends(get_current_user)):
     plans = await db.monthly_plans.find({"userId": ObjectId(current_user["_id"])}).sort("month", -1).to_list(100)

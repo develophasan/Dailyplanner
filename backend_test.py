@@ -169,8 +169,9 @@ class MaarifPlannerTester:
             self.log_test("AI Chat Content Completeness", False, "No auth token available")
             return False
             
+        # EXACT REQUEST FROM REVIEW: "60-72 ay çocukları için isimler ve kimlik teması günlük plan oluştur"
         payload = {
-            "message": "60-72 ay yaş grubu için matematik ve sanat etkinlikleri içeren detaylı günlük plan hazırla. Sayı kavramı, geometrik şekiller ve yaratıcı sanat çalışmaları dahil et.",
+            "message": "60-72 ay çocukları için isimler ve kimlik teması günlük plan oluştur",
             "history": [],
             "ageBand": "60_72",
             "planType": "daily"

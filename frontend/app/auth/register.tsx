@@ -34,17 +34,29 @@ export default function Register() {
     const { name, email, password, confirmPassword, school, className, ageDefault } = formData;
 
     if (!name || !email || !password) {
-      Alert.alert('Hata', 'Ad, e-posta ve şifre gereklidir.');
+      if (Platform.OS === 'web') {
+        alert('Ad, e-posta ve şifre gereklidir.');
+      } else {
+        Alert.alert('Hata', 'Ad, e-posta ve şifre gereklidir.');
+      }
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor.');
+      if (Platform.OS === 'web') {
+        alert('Şifreler eşleşmiyor.');
+      } else {
+        Alert.alert('Hata', 'Şifreler eşleşmiyor.');
+      }
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır.');
+      if (Platform.OS === 'web') {
+        alert('Şifre en az 6 karakter olmalıdır.');
+      } else {
+        Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır.');
+      }
       return;
     }
 
@@ -72,18 +84,31 @@ export default function Register() {
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
         
-        Alert.alert('Başarılı', 'Hesap oluşturuldu!', [
-          {
-            text: 'Tamam',
-            onPress: () => router.replace('/(tabs)/chat'),
-          },
-        ]);
+        if (Platform.OS === 'web') {
+          alert('Hesap oluşturuldu!');
+          router.replace('/(tabs)/chat');
+        } else {
+          Alert.alert('Başarılı', 'Hesap oluşturuldu!', [
+            {
+              text: 'Tamam',
+              onPress: () => router.replace('/(tabs)/chat'),
+            },
+          ]);
+        }
       } else {
-        Alert.alert('Hata', data.detail || 'Kayıt başarısız');
+        if (Platform.OS === 'web') {
+          alert(data.detail || 'Kayıt başarısız');
+        } else {
+          Alert.alert('Hata', data.detail || 'Kayıt başarısız');
+        }
       }
     } catch (error) {
       console.error('Register error:', error);
-      Alert.alert('Hata', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+      if (Platform.OS === 'web') {
+        alert('Bağlantı hatası. Lütfen tekrar deneyin.');
+      } else {
+        Alert.alert('Hata', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+      }
     } finally {
       setIsLoading(false);
     }

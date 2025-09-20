@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -56,15 +56,10 @@ export default function LoginScreen() {
         
         if (Platform.OS === 'web') {
           alert('Giriş başarılı!');
-          router.replace('/(tabs)/chat');
         } else {
-          Alert.alert('Başarılı', 'Giriş başarılı!', [
-            {
-              text: 'Tamam',
-              onPress: () => router.replace('/(tabs)/chat'),
-            },
-          ]);
+          Alert.alert('Başarılı', 'Giriş başarılı!');
         }
+        router.replace('/(tabs)/chat');
       } else {
         if (Platform.OS === 'web') {
           alert(data.detail || 'Giriş başarısız');

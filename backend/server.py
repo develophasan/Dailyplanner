@@ -676,6 +676,10 @@ async def create_daily_plan(plan_data: DailyPlanCreate, current_user: dict = Dep
         logger.error(f"Error creating daily plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating plan: {str(e)}")
 
+@api_router.options("/plans/daily")
+async def plans_daily_get_options():
+    return {"message": "OK"}
+
 @api_router.get("/plans/daily")
 async def get_daily_plans(current_user: dict = Depends(get_current_user), 
                          from_date: Optional[str] = None, 

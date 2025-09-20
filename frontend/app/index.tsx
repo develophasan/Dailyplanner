@@ -10,6 +10,7 @@ const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || proc
 
 export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
+  const [navigationInProgress, setNavigationInProgress] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -18,13 +19,22 @@ export default function HomeScreen() {
   const checkAuthStatus = async () => {
     try {
       console.log('Checking auth status, BACKEND_URL:', BACKEND_URL);
+      
+      // Check if navigation is already in progress to prevent race conditions
+      const navState = await AsyncStorage.getItem('navigationInProgress');
+      if (navState === 'true') {
+        console.log('Navigation already in progress, skipping auth check');
+        setIsLoading(false);
+        return;
+      }
+      
       const token = await AsyncStorage.getItem('authToken');
       console.log('Token from storage:', token ? 'exists' : 'none');
       
       if (token) {
         // Add timeout to fetch request
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
         
         try {
           // Verify token with backend
@@ -41,6 +51,8 @@ export default function HomeScreen() {
           if (response.ok) {
             // User is authenticated, redirect to main app
             console.log('User authenticated, redirecting...');
+            setNavigationInProgress(true);
+            await AsyncStorage.setItem('navigationInProgress', 'true');
             router.replace('/(tabs)/chat');
             return;
           } else {
@@ -48,16 +60,19 @@ export default function HomeScreen() {
             console.log('Token invalid, removing...');
             await AsyncStorage.removeItem('authToken');
             await AsyncStorage.removeItem('user');
+            await AsyncStorage.removeItem('navigationInProgress');
           }
         } catch (fetchError) {
           clearTimeout(timeoutId);
           console.error('Fetch error:', fetchError);
           // If fetch fails, treat as unauthenticated but don't remove existing token
           // in case it's a temporary network issue
+          await AsyncStorage.removeItem('navigationInProgress');
         }
       }
     } catch (error) {
       console.error('Auth check error:', error);
+      await AsyncStorage.removeItem('navigationInProgress');
       // If there's an error, treat as unauthenticated
     }
     

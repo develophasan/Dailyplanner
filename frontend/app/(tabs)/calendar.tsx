@@ -186,7 +186,7 @@ export default function CalendarScreen() {
       <TouchableOpacity
         key={plan.id}
         style={styles.planItem}
-        onPress={() => router.push(`/plan-detail?id=${plan.id}&type=daily`)}
+        onPress={() => router.push(`/plan/${plan.id}?type=daily`)}
       >
         <Text style={styles.planTitle}>{plan.title || 'Günlük Plan'}</Text>
         <Text style={styles.planDate}>{plan.date}</Text>

@@ -559,6 +559,10 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     }
 
 # AI Chat Routes
+@api_router.options("/ai/chat")
+async def chat_options():
+    return {"message": "OK"}
+
 @api_router.post("/ai/chat")
 async def generate_plan(request: PlanGenerateRequest, current_user: dict = Depends(get_current_user)):
     try:

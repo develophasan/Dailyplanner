@@ -198,15 +198,18 @@ backend:
 frontend:
   - task: "Auth Flow (Login/Register/Auto-login)"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/frontend/app/auth/*.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Complete auth flow with AsyncStorage token management"
+      - working: false
+        agent: "user"
+        comment: "User reports: Mail ile üye olurken üye ol diyorum bekliyor bir tepki yok - registration form not responding to button clicks"
 
   - task: "Tab Navigation Structure"
     implemented: true

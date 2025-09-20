@@ -508,6 +508,10 @@ export default function PlanDetail() {
                 <TouchableOpacity 
                   style={styles.deletePhotoButton}
                   onPress={() => deletePortfolioPhoto(photo.id)}
+                  accessibilityRole="button"
+                  {...(Platform.OS === 'web' && {
+                    onClick: () => deletePortfolioPhoto(photo.id)
+                  })}
                 >
                   <Ionicons name="trash-outline" size={16} color="#e74c3c" />
                 </TouchableOpacity>

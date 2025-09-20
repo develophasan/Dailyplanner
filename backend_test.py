@@ -913,6 +913,386 @@ class MaarifPlannerTester:
             self.log_test("Matrix Search", False, f"Exception: {str(e)}")
         
         return False
+
+    # NEW DEVELOPMENT TESTS - As requested in review
+    def test_ai_chat_automatic_date_usage(self):
+        """Test AI Chat automatic use of today's date - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("AI Chat Automatic Date Usage", False, "No auth token available")
+            return False
+            
+        payload = {
+            "message": "60-72 ay çocukları için isimler ve kimlik teması günlük plan oluştur",
+            "history": [],
+            "ageBand": "60_72",
+            "planType": "daily"
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.post(f"{self.base_url}/ai/chat", json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                self.log_test("AI Chat Automatic Date Usage", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+            data = response.json()
+            today_date = datetime.utcnow().strftime("%Y-%m-%d")
+            plan_date = data.get("date", "")
+            
+            print(f"\n📅 AUTOMATIC DATE USAGE TEST:")
+            print(f"   Today's date: {today_date}")
+            print(f"   Plan date: {plan_date}")
+            
+            if plan_date == today_date:
+                self.log_test("AI Chat Automatic Date Usage", True, f"AI automatically used today's date: {plan_date}")
+                return True
+            else:
+                self.log_test("AI Chat Automatic Date Usage", False, f"AI used {plan_date} instead of today's date {today_date}")
+                return False
+                
+        except Exception as e:
+            self.log_test("AI Chat Automatic Date Usage", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_ai_chat_automatic_age_usage(self):
+        """Test AI Chat automatic use of user's ageDefault - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("AI Chat Automatic Age Usage", False, "No auth token available")
+            return False
+            
+        # First get user info to check ageDefault
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            user_response = requests.get(f"{self.base_url}/auth/me", headers=headers)
+            
+            if user_response.status_code != 200:
+                self.log_test("AI Chat Automatic Age Usage", False, "Could not get user info")
+                return False
+                
+            user_data = user_response.json()
+            user_age_default = user_data.get("ageDefault", "60_72")
+            
+            # Now test AI chat without specifying ageBand
+            payload = {
+                "message": "Matematik temalı günlük plan oluştur",
+                "history": [],
+                "planType": "daily"
+                # Note: Not specifying ageBand to test automatic usage
+            }
+            
+            response = requests.post(f"{self.base_url}/ai/chat", json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                self.log_test("AI Chat Automatic Age Usage", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+            data = response.json()
+            plan_age_band = data.get("ageBand", "")
+            
+            print(f"\n👶 AUTOMATIC AGE USAGE TEST:")
+            print(f"   User's ageDefault: {user_age_default}")
+            print(f"   Plan ageBand: {plan_age_band}")
+            
+            if plan_age_band == user_age_default:
+                self.log_test("AI Chat Automatic Age Usage", True, f"AI automatically used user's age group: {plan_age_band}")
+                return True
+            else:
+                self.log_test("AI Chat Automatic Age Usage", False, f"AI used {plan_age_band} instead of user's default {user_age_default}")
+                return False
+                
+        except Exception as e:
+            self.log_test("AI Chat Automatic Age Usage", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_daily_plan_delete(self):
+        """Test DELETE /api/plans/daily/{plan_id} - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("Daily Plan Delete", False, "No auth token available")
+            return False
+            
+        # First create a plan to delete
+        today = datetime.now().strftime("%Y-%m-%d")
+        create_payload = {
+            "date": today,
+            "ageBand": "60_72",
+            "title": "Test Plan for Deletion",
+            "planJson": {
+                "type": "daily",
+                "ageBand": "60_72",
+                "date": today,
+                "finalize": True,
+                "domainOutcomes": [{"code": "MAB.1", "indicators": ["Test"], "notes": "Test"}],
+                "blocks": {
+                    "startOfDay": "Test",
+                    "activities": [{"title": "Test Activity", "location": "Test", "materials": ["Test"], "steps": ["Test"]}],
+                    "assessment": ["Test assessment"]
+                }
+            }
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            
+            # Create plan
+            create_response = requests.post(f"{self.base_url}/plans/daily", json=create_payload, headers=headers)
+            
+            if create_response.status_code != 200:
+                self.log_test("Daily Plan Delete", False, f"Failed to create test plan: {create_response.status_code}")
+                return False
+                
+            plan_data = create_response.json()
+            plan_id = plan_data.get("id")
+            
+            if not plan_id:
+                self.log_test("Daily Plan Delete", False, "No plan ID returned from create")
+                return False
+            
+            print(f"\n🗑️ DAILY PLAN DELETE TEST:")
+            print(f"   Created plan ID: {plan_id}")
+            
+            # Now delete the plan
+            delete_response = requests.delete(f"{self.base_url}/plans/daily/{plan_id}", headers=headers)
+            
+            if delete_response.status_code == 200:
+                delete_data = delete_response.json()
+                if "message" in delete_data:
+                    # Verify plan is actually deleted by trying to get it
+                    get_response = requests.get(f"{self.base_url}/plans/daily/{plan_id}", headers=headers)
+                    if get_response.status_code == 404:
+                        self.log_test("Daily Plan Delete", True, f"Plan {plan_id} successfully deleted")
+                        return True
+                    else:
+                        self.log_test("Daily Plan Delete", False, f"Plan still exists after deletion (HTTP {get_response.status_code})")
+                        return False
+                else:
+                    self.log_test("Daily Plan Delete", False, "Missing message in delete response")
+                    return False
+            else:
+                self.log_test("Daily Plan Delete", False, f"HTTP {delete_response.status_code}: {delete_response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Daily Plan Delete", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_monthly_plan_delete(self):
+        """Test DELETE /api/plans/monthly/{plan_id} - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("Monthly Plan Delete", False, "No auth token available")
+            return False
+            
+        # First create a monthly plan to delete
+        current_month = datetime.now().strftime("%Y-%m")
+        create_payload = {
+            "month": current_month,
+            "ageBand": "60_72",
+            "title": "Test Monthly Plan for Deletion",
+            "planJson": {
+                "type": "monthly",
+                "ageBand": "60_72",
+                "month": current_month,
+                "themes": ["Test Theme"],
+                "weeklyGoals": ["Test Goal"]
+            }
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            
+            # Create monthly plan
+            create_response = requests.post(f"{self.base_url}/plans/monthly", json=create_payload, headers=headers)
+            
+            if create_response.status_code != 200:
+                self.log_test("Monthly Plan Delete", False, f"Failed to create test monthly plan: {create_response.status_code}")
+                return False
+                
+            plan_data = create_response.json()
+            plan_id = plan_data.get("id")
+            
+            if not plan_id:
+                self.log_test("Monthly Plan Delete", False, "No plan ID returned from create")
+                return False
+            
+            print(f"\n🗑️ MONTHLY PLAN DELETE TEST:")
+            print(f"   Created monthly plan ID: {plan_id}")
+            
+            # Now delete the monthly plan
+            delete_response = requests.delete(f"{self.base_url}/plans/monthly/{plan_id}", headers=headers)
+            
+            if delete_response.status_code == 200:
+                delete_data = delete_response.json()
+                if "message" in delete_data:
+                    self.log_test("Monthly Plan Delete", True, f"Monthly plan {plan_id} successfully deleted")
+                    return True
+                else:
+                    self.log_test("Monthly Plan Delete", False, "Missing message in delete response")
+                    return False
+            else:
+                self.log_test("Monthly Plan Delete", False, f"HTTP {delete_response.status_code}: {delete_response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Monthly Plan Delete", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_portfolio_photo_upload(self):
+        """Test POST /api/plans/daily/{plan_id}/portfolio - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("Portfolio Photo Upload", False, "No auth token available")
+            return False
+            
+        # First create a daily plan for portfolio
+        if not hasattr(self, 'plan_id'):
+            # Create a plan if we don't have one
+            today = datetime.now().strftime("%Y-%m-%d")
+            create_payload = {
+                "date": today,
+                "ageBand": "60_72",
+                "title": "Test Plan for Portfolio",
+                "planJson": {
+                    "type": "daily",
+                    "ageBand": "60_72",
+                    "date": today,
+                    "finalize": True,
+                    "domainOutcomes": [{"code": "MAB.1", "indicators": ["Test"], "notes": "Test"}],
+                    "blocks": {
+                        "startOfDay": "Test",
+                        "activities": [{"title": "Sanat Etkinliği", "location": "Sanat merkezi", "materials": ["Boya"], "steps": ["Boyama"]}],
+                        "assessment": ["Fotoğraf"]
+                    }
+                }
+            }
+            
+            try:
+                headers = {"Authorization": f"Bearer {self.auth_token}"}
+                create_response = requests.post(f"{self.base_url}/plans/daily", json=create_payload, headers=headers)
+                
+                if create_response.status_code != 200:
+                    self.log_test("Portfolio Photo Upload", False, f"Failed to create test plan: {create_response.status_code}")
+                    return False
+                    
+                plan_data = create_response.json()
+                self.plan_id = plan_data.get("id")
+                
+            except Exception as e:
+                self.log_test("Portfolio Photo Upload", False, f"Exception creating plan: {str(e)}")
+                return False
+        
+        # Sample base64 image (1x1 pixel PNG)
+        sample_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77zgAAAABJRU5ErkJggg=="
+        
+        portfolio_payload = {
+            "planId": self.plan_id,
+            "activityTitle": "Sanat Etkinliği",
+            "photoBase64": sample_base64,
+            "description": "Çocuğun boyama çalışması"
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.post(f"{self.base_url}/plans/daily/{self.plan_id}/portfolio", json=portfolio_payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "id" in data and "message" in data:
+                    self.portfolio_photo_id = data["id"]
+                    print(f"\n📸 PORTFOLIO PHOTO UPLOAD TEST:")
+                    print(f"   Uploaded photo ID: {data['id']}")
+                    self.log_test("Portfolio Photo Upload", True, f"Portfolio photo uploaded with ID: {data['id']}")
+                    return True
+                else:
+                    self.log_test("Portfolio Photo Upload", False, "Missing id or message in response")
+                    return False
+            else:
+                self.log_test("Portfolio Photo Upload", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Portfolio Photo Upload", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_portfolio_photos_get(self):
+        """Test GET /api/plans/daily/{plan_id}/portfolio - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("Portfolio Photos Get", False, "No auth token available")
+            return False
+            
+        if not hasattr(self, 'plan_id'):
+            self.log_test("Portfolio Photos Get", False, "No plan ID available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.get(f"{self.base_url}/plans/daily/{self.plan_id}/portfolio", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    print(f"\n📷 PORTFOLIO PHOTOS GET TEST:")
+                    print(f"   Retrieved {len(data)} portfolio photos")
+                    
+                    # Check structure of photos
+                    if len(data) > 0:
+                        photo = data[0]
+                        required_fields = ["id", "activityTitle", "photoBase64", "uploadedAt"]
+                        missing_fields = [field for field in required_fields if field not in photo]
+                        
+                        if missing_fields:
+                            self.log_test("Portfolio Photos Get", False, f"Missing fields in photo: {', '.join(missing_fields)}")
+                            return False
+                    
+                    self.log_test("Portfolio Photos Get", True, f"Retrieved {len(data)} portfolio photos with correct structure")
+                    return True
+                else:
+                    self.log_test("Portfolio Photos Get", False, "Response is not a list")
+                    return False
+            else:
+                self.log_test("Portfolio Photos Get", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Portfolio Photos Get", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_portfolio_photo_delete(self):
+        """Test DELETE /portfolio/{photo_id} - NEW DEVELOPMENT"""
+        if not self.auth_token:
+            self.log_test("Portfolio Photo Delete", False, "No auth token available")
+            return False
+            
+        if not hasattr(self, 'portfolio_photo_id'):
+            self.log_test("Portfolio Photo Delete", False, "No portfolio photo ID available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.delete(f"{self.base_url}/portfolio/{self.portfolio_photo_id}", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data:
+                    print(f"\n🗑️ PORTFOLIO PHOTO DELETE TEST:")
+                    print(f"   Deleted photo ID: {self.portfolio_photo_id}")
+                    self.log_test("Portfolio Photo Delete", True, f"Portfolio photo {self.portfolio_photo_id} successfully deleted")
+                    return True
+                else:
+                    self.log_test("Portfolio Photo Delete", False, "Missing message in delete response")
+                    return False
+            else:
+                self.log_test("Portfolio Photo Delete", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Portfolio Photo Delete", False, f"Exception: {str(e)}")
+        
+        return False
     
     def run_all_tests(self):
         """Run all backend tests in order"""

@@ -326,8 +326,8 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus: ["AI Chat Integration (Emergent LLM + OpenAI)"]
+  stuck_tasks: ["AI Chat Integration (Emergent LLM + OpenAI)"]
   test_all: false
   test_priority: "high_first"
 

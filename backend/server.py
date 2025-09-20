@@ -706,6 +706,10 @@ async def get_daily_plans(current_user: dict = Depends(get_current_user),
         for plan in plans
     ]
 
+@api_router.options("/plans/daily/{plan_id}")
+async def plans_daily_detail_options(plan_id: str):
+    return {"message": "OK"}
+
 @api_router.get("/plans/daily/{plan_id}")
 async def get_daily_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
     try:

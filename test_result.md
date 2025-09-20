@@ -198,11 +198,11 @@ backend:
 frontend:
   - task: "Auth Flow (Login/Register/Auto-login)"
     implemented: true
-    working: false
+    working: true
     file: "/app/frontend/app/auth/*.tsx"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -210,6 +210,9 @@ frontend:
       - working: false
         agent: "user"
         comment: "User reports: Mail ile üye olurken üye ol diyorum bekliyor bir tepki yok - registration form not responding to button clicks"
+      - working: true
+        agent: "main"
+        comment: "FIXED: Environment variable exposure issue in app.json. Added extra field with EXPO_PUBLIC_BACKEND_URL and fallback URLs. Registration form now works - screenshots confirm navigation, form filling, and backend connectivity."
 
   - task: "Tab Navigation Structure"
     implemented: true

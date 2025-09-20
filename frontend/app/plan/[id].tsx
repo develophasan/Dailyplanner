@@ -553,7 +553,14 @@ export default function PlanDetail() {
           <Ionicons name="arrow-back" size={24} color="#2c3e50" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{plan.title || 'Plan Detayı'}</Text>
-        <TouchableOpacity onPress={handleDeletePlan} style={styles.deleteIcon}>
+        <TouchableOpacity 
+          onPress={handleDeletePlan} 
+          style={styles.deleteIcon}
+          accessibilityRole="button"
+          {...(Platform.OS === 'web' && {
+            onClick: handleDeletePlan
+          })}
+        >
           <Ionicons name="trash-outline" size={24} color="#e74c3c" />
         </TouchableOpacity>
       </View>

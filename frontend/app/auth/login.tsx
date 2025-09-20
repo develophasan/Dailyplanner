@@ -131,19 +131,16 @@ export default function Login() {
               />
             </View>
 
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.loginButton, isLoading && styles.disabledButton]}
               onPress={handleLogin}
               disabled={isLoading}
-              accessibilityRole={Platform.OS === 'web' ? 'button' : undefined}
-              {...(Platform.OS === 'web' && {
-                onClick: handleLogin
-              })}
+              accessibilityRole="button"
             >
               <Text style={styles.loginButtonText}>
                 {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.registerContainer}>
               <Text style={styles.registerText}>Hesabınız yok mu? </Text>

@@ -41,7 +41,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": "http://localhost:8001"
+      "EXPO_PUBLIC_BACKEND_URL": "http://10.64.133.68:8001"
     }
   }
 }

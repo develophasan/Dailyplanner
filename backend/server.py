@@ -884,6 +884,8 @@ async def startup_event():
     await db.daily_plans.create_index([("userId", 1), ("date", -1)])
     await db.monthly_plans.create_index([("userId", 1), ("month", -1)])
     await db.chat_history.create_index([("userId", 1), ("timestamp", -1)])
+    await db.portfolio_photos.create_index([("planId", 1), ("userId", 1)])
+    await db.portfolio_photos.create_index([("userId", 1), ("uploadedAt", -1)])
     logger.info("Database indexes created")
 
 @app.on_event("shutdown")

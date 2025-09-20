@@ -17,23 +17,43 @@ export default function HomeScreen() {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('Checking auth status, BACKEND_URL:', BACKEND_URL);
       const token = await AsyncStorage.getItem('authToken');
+      console.log('Token from storage:', token ? 'exists' : 'none');
+      
       if (token) {
-        // Verify token with backend
-        const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        // Add timeout to fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         
-        if (response.ok) {
-          // User is authenticated, redirect to main app
-          router.replace('/(tabs)/chat');
-          return;
-        } else {
-          // Token is invalid, remove it
-          await AsyncStorage.removeItem('authToken');
-          await AsyncStorage.removeItem('user');
+        try {
+          // Verify token with backend
+          const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          console.log('Auth response status:', response.status);
+          
+          if (response.ok) {
+            // User is authenticated, redirect to main app
+            console.log('User authenticated, redirecting...');
+            router.replace('/(tabs)/chat');
+            return;
+          } else {
+            // Token is invalid, remove it
+            console.log('Token invalid, removing...');
+            await AsyncStorage.removeItem('authToken');
+            await AsyncStorage.removeItem('user');
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          console.error('Fetch error:', fetchError);
+          // If fetch fails, treat as unauthenticated but don't remove existing token
+          // in case it's a temporary network issue
         }
       }
     } catch (error) {

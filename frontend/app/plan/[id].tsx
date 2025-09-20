@@ -258,17 +258,29 @@ export default function PlanDetail() {
       });
 
       if (response.ok) {
-        Alert.alert('Başarılı', 'Fotoğraf eklendi');
+        if (Platform.OS === 'web') {
+          alert('Fotoğraf eklendi');
+        } else {
+          Alert.alert('Başarılı', 'Fotoğraf eklendi');
+        }
         setShowPortfolioModal(false);
         setSelectedActivity('');
         setPhotoDescription('');
         loadPortfolioPhotos(); // Refresh portfolio
       } else {
-        Alert.alert('Hata', 'Fotoğraf yüklenirken bir hata oluştu');
+        if (Platform.OS === 'web') {
+          alert('Fotoğraf yüklenirken bir hata oluştu');
+        } else {
+          Alert.alert('Hata', 'Fotoğraf yüklenirken bir hata oluştu');
+        }
       }
     } catch (error) {
       console.error('Fotoğraph upload hatası:', error);
-      Alert.alert('Hata', 'Bağlantı hatası');
+      if (Platform.OS === 'web') {
+        alert('Bağlantı hatası');
+      } else {
+        Alert.alert('Hata', 'Bağlantı hatası');
+      }
     } finally {
       setIsUploading(false);
     }

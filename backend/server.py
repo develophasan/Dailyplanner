@@ -302,23 +302,31 @@ async def generate_plan(request: PlanGenerateRequest, current_user: dict = Depen
 # Plan Routes
 @api_router.post("/plans/daily")
 async def create_daily_plan(plan_data: DailyPlanCreate, current_user: dict = Depends(get_current_user)):
-    plan_dict = {
-        "userId": ObjectId(current_user["_id"]),
-        "date": datetime.fromisoformat(plan_data.date),
-        "ageBand": plan_data.ageBand,
-        "planJson": plan_data.planJson,
-        "title": plan_data.title or f"Günlük Plan - {plan_data.date}",
-        "createdAt": datetime.utcnow(),
-        "pdfUrl": None
-    }
-    
-    result = await db.daily_plans.insert_one(plan_dict)
-    plan_dict["_id"] = result.inserted_id
-    
-    return {
-        "id": str(result.inserted_id),
-        "message": "Daily plan created successfully"
-    }
+    try:
+        logger.info(f"Creating daily plan for user {current_user['_id']}: {plan_data}")
+        
+        plan_dict = {
+            "userId": ObjectId(current_user["_id"]),
+            "date": datetime.fromisoformat(plan_data.date),
+            "ageBand": plan_data.ageBand,
+            "planJson": plan_data.planJson,
+            "title": plan_data.title or f"Günlük Plan - {plan_data.date}",
+            "createdAt": datetime.utcnow(),
+            "pdfUrl": None
+        }
+        
+        result = await db.daily_plans.insert_one(plan_dict)
+        plan_dict["_id"] = result.inserted_id
+        
+        logger.info(f"Daily plan created successfully with id: {result.inserted_id}")
+        
+        return {
+            "id": str(result.inserted_id),
+            "message": "Daily plan created successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error creating daily plan: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating plan: {str(e)}")
 
 @api_router.get("/plans/daily")
 async def get_daily_plans(current_user: dict = Depends(get_current_user), 

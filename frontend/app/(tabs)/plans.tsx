@@ -235,6 +235,14 @@ export default function Plans() {
                       <Text style={styles.actionButtonText}>PDF</Text>
                     </TouchableOpacity>
                   )}
+                  
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.deleteButton]}
+                    onPress={() => deletePlan(plan.id, activeTab)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#e74c3c" />
+                    <Text style={[styles.actionButtonText, styles.deleteText]}>Sil</Text>
+                  </TouchableOpacity>
                 </View>
                 
                 <View style={styles.planCardFooter}>

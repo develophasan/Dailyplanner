@@ -134,6 +134,10 @@ export default function Login() {
               style={[styles.loginButton, isLoading && styles.disabledButton]}
               onPress={handleLogin}
               disabled={isLoading}
+              accessibilityRole={Platform.OS === 'web' ? 'button' : undefined}
+              {...(Platform.OS === 'web' && {
+                onClick: handleLogin
+              })}
             >
               <Text style={styles.loginButtonText}>
                 {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}

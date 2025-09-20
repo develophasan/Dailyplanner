@@ -238,7 +238,7 @@ export default function Plans() {
                   
                   <TouchableOpacity 
                     style={[styles.actionButton, styles.deleteButton]}
-                    onPress={() => deletePlan(plan.id, activeTab)}
+                    onPress={() => deletePlan(plan.id, activeTab as 'daily' | 'monthly')}
                   >
                     <Ionicons name="trash-outline" size={20} color="#e74c3c" />
                     <Text style={[styles.actionButtonText, styles.deleteText]}>Sil</Text>

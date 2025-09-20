@@ -176,7 +176,11 @@ export default function PlanDetail() {
 
   const handleAddPortfolio = () => {
     if (!plan?.planJson?.blocks?.activities || plan.planJson.blocks.activities.length === 0) {
-      Alert.alert('Bilgi', 'Bu planda etkinlik bulunmuyor');
+      if (Platform.OS === 'web') {
+        alert('Bu planda etkinlik bulunmuyor');
+      } else {
+        Alert.alert('Bilgi', 'Bu planda etkinlik bulunmuyor');
+      }
       return;
     }
     setShowPortfolioModal(true);

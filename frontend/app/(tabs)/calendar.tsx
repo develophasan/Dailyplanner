@@ -13,9 +13,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || Constants.expoConfig?.hostUri 
-  ? `http://${Constants.expoConfig.hostUri.split(':')[0]}:8001` 
-  : 'http://localhost:8001';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 interface Plan {
   id: string;

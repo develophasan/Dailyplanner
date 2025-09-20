@@ -164,7 +164,7 @@ class MaarifPlannerTester:
         return False
 
     def test_ai_chat_content_completeness(self):
-        """Test AI chat endpoint for complete plan content - CRITICAL TEST"""
+        """Test AI chat endpoint for complete plan content - CRITICAL TEST AS PER REVIEW REQUEST"""
         if not self.auth_token:
             self.log_test("AI Chat Content Completeness", False, "No auth token available")
             return False
@@ -185,79 +185,177 @@ class MaarifPlannerTester:
                 return False
                 
             data = response.json()
-            print(f"\n🔍 AI Response Analysis:")
+            print(f"\n🔍 COMPREHENSIVE AI CONTENT ANALYSIS (Review Request):")
             print(f"Response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
             
             # Store response for detailed analysis
             self.ai_response = data
             
-            # Critical checks for complete plan content
+            # CRITICAL CHECKS AS PER REVIEW REQUEST
             issues = []
+            warnings = []
             
-            # Check finalize status
+            # 1. Check finalize status
             if not data.get("finalize"):
                 issues.append("Plan not finalized (finalize: false)")
             
-            # Check blocks object exists and is complete
+            # 2. Check blocks object exists and is complete
             blocks = data.get("blocks", {})
             if not blocks:
                 issues.append("Missing 'blocks' object")
-            else:
-                # Check activities array
-                activities = blocks.get("activities", [])
-                if not activities:
-                    issues.append("Empty 'blocks.activities' array")
-                elif len(activities) == 0:
-                    issues.append("'blocks.activities' array has no items")
-                else:
-                    # Check activity details
-                    for i, activity in enumerate(activities):
-                        if not activity.get("title"):
-                            issues.append(f"Activity {i+1} missing title")
-                        if not activity.get("materials"):
-                            issues.append(f"Activity {i+1} missing materials")
-                        if not activity.get("steps"):
-                            issues.append(f"Activity {i+1} missing steps")
-                
-                # Check assessment array
-                assessment = blocks.get("assessment", [])
-                if not assessment:
-                    issues.append("Empty 'blocks.assessment' array")
-                elif len(assessment) == 0:
-                    issues.append("'blocks.assessment' array has no items")
+                return self._log_content_test_result(issues, warnings, data)
             
-            # Check domainOutcomes
-            domain_outcomes = data.get("domainOutcomes", [])
-            if not domain_outcomes:
-                issues.append("Empty 'domainOutcomes' array")
-            elif len(domain_outcomes) == 0:
-                issues.append("'domainOutcomes' array has no items")
+            # 3. DETAILED ACTIVITIES VALIDATION (Review Requirement)
+            activities = blocks.get("activities", [])
+            if not activities or len(activities) == 0:
+                issues.append("Empty 'blocks.activities' array")
             else:
-                # Check for proper Turkish educational codes
-                valid_codes = False
+                print(f"   📋 Found {len(activities)} activities")
+                if len(activities) < 3:
+                    warnings.append(f"Only {len(activities)} activities (recommended: minimum 3)")
+                
+                # Check each activity for detailed requirements
+                for i, activity in enumerate(activities):
+                    activity_issues = []
+                    
+                    # Required fields
+                    if not activity.get("title"):
+                        activity_issues.append("missing title")
+                    if not activity.get("location"):
+                        activity_issues.append("missing location")
+                    if not activity.get("duration"):
+                        activity_issues.append("missing duration")
+                    if not activity.get("objectives"):
+                        activity_issues.append("missing objectives")
+                    if not activity.get("differentiation"):
+                        activity_issues.append("missing differentiation")
+                    
+                    # Materials validation (Review Requirement: 5-8 items)
+                    materials = activity.get("materials", [])
+                    if not materials:
+                        activity_issues.append("missing materials")
+                    elif len(materials) < 5:
+                        warnings.append(f"Activity {i+1} has only {len(materials)} materials (recommended: 5-8)")
+                    elif len(materials) > 8:
+                        warnings.append(f"Activity {i+1} has {len(materials)} materials (recommended: 5-8)")
+                    else:
+                        print(f"   ✅ Activity {i+1} materials: {len(materials)} items")
+                    
+                    # Steps validation (Review Requirement: 6-10 steps)
+                    steps = activity.get("steps", [])
+                    if not steps:
+                        activity_issues.append("missing steps")
+                    elif len(steps) < 6:
+                        warnings.append(f"Activity {i+1} has only {len(steps)} steps (recommended: 6-10)")
+                    elif len(steps) > 10:
+                        warnings.append(f"Activity {i+1} has {len(steps)} steps (recommended: 6-10)")
+                    else:
+                        print(f"   ✅ Activity {i+1} steps: {len(steps)} items")
+                    
+                    # Mapping validation
+                    if not activity.get("mapping"):
+                        activity_issues.append("missing mapping")
+                    
+                    if activity_issues:
+                        issues.append(f"Activity {i+1} ({activity.get('title', 'Untitled')}): {', '.join(activity_issues)}")
+            
+            # 4. ASSESSMENT VALIDATION (Review Requirement: 5-6 methods)
+            assessment = blocks.get("assessment", [])
+            if not assessment or len(assessment) == 0:
+                issues.append("Empty 'blocks.assessment' array")
+            else:
+                print(f"   📊 Found {len(assessment)} assessment methods")
+                if len(assessment) < 5:
+                    warnings.append(f"Only {len(assessment)} assessment methods (recommended: 5-6)")
+                elif len(assessment) > 6:
+                    warnings.append(f"{len(assessment)} assessment methods (recommended: 5-6)")
+                else:
+                    print(f"   ✅ Assessment methods: {len(assessment)} items (optimal)")
+            
+            # 5. MEALS/CLEANUP VALIDATION (Review Requirement: 4-5 items)
+            meals_cleanup = blocks.get("mealsCleanup", [])
+            if not meals_cleanup or len(meals_cleanup) == 0:
+                issues.append("Empty 'blocks.mealsCleanup' array")
+            else:
+                print(f"   🍽️ Found {len(meals_cleanup)} meals/cleanup items")
+                if len(meals_cleanup) < 4:
+                    warnings.append(f"Only {len(meals_cleanup)} meals/cleanup items (recommended: 4-5)")
+                elif len(meals_cleanup) > 5:
+                    warnings.append(f"{len(meals_cleanup)} meals/cleanup items (recommended: 4-5)")
+                else:
+                    print(f"   ✅ Meals/cleanup: {len(meals_cleanup)} items (optimal)")
+            
+            # 6. DOMAIN OUTCOMES VALIDATION (Review Requirement: 4-5 areas)
+            domain_outcomes = data.get("domainOutcomes", [])
+            if not domain_outcomes or len(domain_outcomes) == 0:
+                issues.append("Empty 'domainOutcomes' array")
+            else:
+                print(f"   🎯 Found {len(domain_outcomes)} domain outcomes")
+                if len(domain_outcomes) < 4:
+                    warnings.append(f"Only {len(domain_outcomes)} domain outcomes (recommended: 4-5)")
+                elif len(domain_outcomes) > 5:
+                    warnings.append(f"{len(domain_outcomes)} domain outcomes (recommended: 4-5)")
+                else:
+                    print(f"   ✅ Domain outcomes: {len(domain_outcomes)} items (optimal)")
+                
+                # Check for proper Turkish educational codes (TADB, MAB, HSAB, SNAB, SDB)
+                found_codes = set()
                 for outcome in domain_outcomes:
                     code = outcome.get("code", "")
-                    if any(prefix in code for prefix in ["MAB", "TADB", "HSAB", "SNAB", "SDB"]):
-                        valid_codes = True
-                        break
-                if not valid_codes:
-                    issues.append("No valid Turkish educational codes in domainOutcomes")
+                    for prefix in ["TADB", "MAB", "HSAB", "SNAB", "SDB"]:
+                        if prefix in code:
+                            found_codes.add(prefix)
+                            break
+                
+                print(f"   📚 Educational domains found: {', '.join(sorted(found_codes))}")
+                if len(found_codes) < 4:
+                    warnings.append(f"Only {len(found_codes)} educational domains covered (recommended: 4-5 from TADB, MAB, HSAB, SNAB, SDB)")
             
-            if issues:
-                details = f"Content issues found: {'; '.join(issues)}"
-                self.log_test("AI Chat Content Completeness", False, details)
-                print(f"❌ Issues: {details}")
-                return False
+            # 7. CONCEPTUAL SKILLS VALIDATION (Review Requirement)
+            conceptual_skills = data.get("conceptualSkills", [])
+            if not conceptual_skills or len(conceptual_skills) == 0:
+                issues.append("Missing 'conceptualSkills' array")
             else:
-                details = f"Complete plan with {len(activities)} activities, {len(assessment)} assessment methods, {len(domain_outcomes)} domain outcomes"
-                self.log_test("AI Chat Content Completeness", True, details)
-                print(f"✅ Complete: {details}")
-                return True
+                print(f"   🧠 Found {len(conceptual_skills)} conceptual skills")
+            
+            # 8. DISPOSITIONS VALIDATION (Review Requirement)
+            dispositions = data.get("dispositions", [])
+            if not dispositions or len(dispositions) == 0:
+                issues.append("Missing 'dispositions' array")
+            else:
+                print(f"   💭 Found {len(dispositions)} dispositions")
+            
+            return self._log_content_test_result(issues, warnings, data)
                 
         except Exception as e:
             self.log_test("AI Chat Content Completeness", False, f"Exception: {str(e)}")
         
         return False
+    
+    def _log_content_test_result(self, issues, warnings, data):
+        """Helper method to log comprehensive content test results"""
+        blocks = data.get("blocks", {})
+        activities = blocks.get("activities", [])
+        assessment = blocks.get("assessment", [])
+        domain_outcomes = data.get("domainOutcomes", [])
+        conceptual_skills = data.get("conceptualSkills", [])
+        dispositions = data.get("dispositions", [])
+        meals_cleanup = blocks.get("mealsCleanup", [])
+        
+        if issues:
+            details = f"CRITICAL ISSUES: {'; '.join(issues)}"
+            if warnings:
+                details += f" | WARNINGS: {'; '.join(warnings)}"
+            self.log_test("AI Chat Content Completeness", False, details)
+            print(f"❌ FAILED: {details}")
+            return False
+        else:
+            success_details = f"✅ COMPREHENSIVE PLAN: {len(activities)} activities, {len(assessment)} assessments, {len(domain_outcomes)} domains, {len(conceptual_skills)} skills, {len(dispositions)} dispositions, {len(meals_cleanup)} meals/cleanup"
+            if warnings:
+                success_details += f" | Minor warnings: {'; '.join(warnings)}"
+            self.log_test("AI Chat Content Completeness", True, success_details)
+            print(f"✅ PASSED: {success_details}")
+            return True
 
     def test_ai_chat_multiple_calls_consistency(self):
         """Test AI chat consistency across multiple calls"""

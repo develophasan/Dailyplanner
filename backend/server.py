@@ -728,6 +728,136 @@ async def search_matrix(q: str = "", ageBand: str = ""):
     
     return results
 
+# Plan Delete Routes
+@api_router.delete("/plans/daily/{plan_id}")
+async def delete_daily_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        result = await db.daily_plans.delete_one({
+            "_id": ObjectId(plan_id),
+            "userId": ObjectId(current_user["_id"])
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Plan not found")
+            
+        logger.info(f"Daily plan deleted: {plan_id} by user {current_user['_id']}")
+        return {"message": "Plan deleted successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting daily plan: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.delete("/plans/monthly/{plan_id}")
+async def delete_monthly_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        result = await db.monthly_plans.delete_one({
+            "_id": ObjectId(plan_id),
+            "userId": ObjectId(current_user["_id"])
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Plan not found")
+            
+        logger.info(f"Monthly plan deleted: {plan_id} by user {current_user['_id']}")
+        return {"message": "Plan deleted successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting monthly plan: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Portfolio Routes
+@api_router.post("/plans/daily/{plan_id}/portfolio")
+async def add_portfolio_photo(
+    plan_id: str, 
+    portfolio_data: PortfolioPhotoCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        # Verify plan belongs to user
+        plan = await db.daily_plans.find_one({
+            "_id": ObjectId(plan_id),
+            "userId": ObjectId(current_user["_id"])
+        })
+        
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+            
+        # Create portfolio entry
+        portfolio_entry = {
+            "_id": ObjectId(),
+            "planId": ObjectId(plan_id),
+            "userId": ObjectId(current_user["_id"]),
+            "activityTitle": portfolio_data.activityTitle,
+            "photoBase64": portfolio_data.photoBase64,
+            "description": portfolio_data.description,
+            "uploadedAt": datetime.utcnow()
+        }
+        
+        # Insert into portfolio collection
+        result = await db.portfolio_photos.insert_one(portfolio_entry)
+        
+        logger.info(f"Portfolio photo added to plan {plan_id} by user {current_user['_id']}")
+        
+        return {
+            "id": str(result.inserted_id),
+            "message": "Portfolio photo added successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error adding portfolio photo: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.get("/plans/daily/{plan_id}/portfolio")
+async def get_portfolio_photos(plan_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        # Verify plan belongs to user
+        plan = await db.daily_plans.find_one({
+            "_id": ObjectId(plan_id),
+            "userId": ObjectId(current_user["_id"])
+        })
+        
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+            
+        # Get portfolio photos
+        photos = await db.portfolio_photos.find({
+            "planId": ObjectId(plan_id),
+            "userId": ObjectId(current_user["_id"])
+        }).sort("uploadedAt", -1).to_list(length=100)
+        
+        return [
+            {
+                "id": str(photo["_id"]),
+                "activityTitle": photo["activityTitle"],
+                "photoBase64": photo["photoBase64"],
+                "description": photo.get("description"),
+                "uploadedAt": photo["uploadedAt"].isoformat()
+            }
+            for photo in photos
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting portfolio photos: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.delete("/portfolio/{photo_id}")
+async def delete_portfolio_photo(photo_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        result = await db.portfolio_photos.delete_one({
+            "_id": ObjectId(photo_id),
+            "userId": ObjectId(current_user["_id"])
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Portfolio photo not found")
+            
+        logger.info(f"Portfolio photo deleted: {photo_id} by user {current_user['_id']}")
+        return {"message": "Portfolio photo deleted successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting portfolio photo: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 # Include router in app
 app.include_router(api_router)
 

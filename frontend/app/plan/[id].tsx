@@ -149,15 +149,28 @@ export default function PlanDetail() {
       });
 
       if (response.ok) {
-        Alert.alert('Başarılı', 'Plan silindi', [
-          { text: 'Tamam', onPress: () => router.back() }
-        ]);
+        if (Platform.OS === 'web') {
+          alert('Plan silindi');
+          router.back();
+        } else {
+          Alert.alert('Başarılı', 'Plan silindi', [
+            { text: 'Tamam', onPress: () => router.back() }
+          ]);
+        }
       } else {
-        Alert.alert('Hata', 'Plan silinirken bir hata oluştu');
+        if (Platform.OS === 'web') {
+          alert('Plan silinirken bir hata oluştu');
+        } else {
+          Alert.alert('Hata', 'Plan silinirken bir hata oluştu');
+        }
       }
     } catch (error) {
       console.error('Plan silme hatası:', error);
-      Alert.alert('Hata', 'Bağlantı hatası');
+      if (Platform.OS === 'web') {
+        alert('Bağlantı hatası');
+      } else {
+        Alert.alert('Hata', 'Bağlantı hatası');
+      }
     }
   };
 

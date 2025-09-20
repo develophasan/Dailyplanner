@@ -698,8 +698,11 @@ class MaarifPlannerTester:
         self.test_daily_plans_get_by_id()
         
         # CRITICAL AI CONTENT QUALITY TESTS (as requested in review)
-        print("\n🎯 CRITICAL AI CONTENT QUALITY TESTS:")
+        print("\n🎯 CRITICAL AI CONTENT QUALITY TESTS (Review Request):")
         self.test_ai_chat_content_completeness()
+        self.test_ai_comprehensive_plan_60_72_art_theme()
+        self.test_ai_detailed_plan_math_language()
+        self.test_ai_response_structure_validation()
         self.test_ai_chat_multiple_calls_consistency()
         self.test_ai_chat_incomplete_info_handling()
         

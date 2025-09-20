@@ -348,6 +348,10 @@ class MaarifPlannerTester:
             
             if response.status_code == 200:
                 data = response.json()
+                print(f"🔍 Incomplete Info Response Analysis:")
+                print(f"finalize: {data.get('finalize')}")
+                print(f"followUpQuestions: {bool(data.get('followUpQuestions'))}")
+                print(f"missingFields: {bool(data.get('missingFields'))}")
                 
                 # Should either ask follow-up questions or provide a basic plan
                 has_follow_up = bool(data.get("followUpQuestions"))
@@ -355,7 +359,8 @@ class MaarifPlannerTester:
                 is_finalized = data.get("finalize", False)
                 
                 if has_follow_up or has_missing_fields or not is_finalized:
-                    self.log_test("AI Chat Incomplete Info", True, "AI properly handles incomplete information")
+                    details = f"AI properly handles incomplete info - finalize: {is_finalized}, followUp: {has_follow_up}, missing: {has_missing_fields}"
+                    self.log_test("AI Chat Incomplete Info", True, details)
                     return True
                 else:
                     # If finalized, should still have complete content

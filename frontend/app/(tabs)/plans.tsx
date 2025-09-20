@@ -407,6 +407,15 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: '500',
   },
+  deleteButton: {
+    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteText: {
+    color: '#e74c3c',
+  },
   planCardFooter: {
     alignItems: 'flex-end',
   },

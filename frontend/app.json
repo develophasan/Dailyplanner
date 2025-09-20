@@ -41,7 +41,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": "http://10.64.133.68:8001"
+      "EXPO_PUBLIC_BACKEND_URL": "https://d7ae705b-7e8b-4812-a515-fa717748a941.preview.emergentagent.com"
     }
   }
 }

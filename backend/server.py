@@ -547,6 +547,10 @@ async def login(login_data: UserLogin):
         }
     }
 
+@api_router.options("/auth/me")
+async def auth_me_options():
+    return {"message": "OK"}
+
 @api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     return {

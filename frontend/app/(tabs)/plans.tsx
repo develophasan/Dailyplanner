@@ -102,7 +102,16 @@ export default function PlansScreen() {
       }
 
       const endpoint = activeTab === 'daily' ? 'daily' : 'monthly';
-      const response = await fetch(`${BACKEND_URL}/api/plans/${endpoint}`, {
+      
+      // Add date range for current month
+      const currentDate = new Date();
+      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      const fromDate = firstDayOfMonth.toISOString().split('T')[0];
+      const toDate = lastDayOfMonth.toISOString().split('T')[0];
+      
+      const response = await fetch(`${BACKEND_URL}/api/plans/${endpoint}?from_date=${fromDate}&to_date=${toDate}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

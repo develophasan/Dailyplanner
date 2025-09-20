@@ -181,19 +181,27 @@ export default function Chat() {
         return;
       }
 
+      // Prepare plan data with proper defaults and validation
+      const planData = {
+        date: currentResponse.date || new Date().toISOString().split('T')[0],
+        ageBand: currentResponse.ageBand || user?.ageDefault || '60_72',
+        planJson: currentResponse,
+        title: `Günlük Plan - ${currentResponse.date || new Date().toLocaleDateString('tr-TR')}`,
+      };
+
+      console.log('Saving plan data:', planData);
+
       const response = await fetch(`${BACKEND_URL}/api/plans/daily`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          date: currentResponse.date || new Date().toISOString().split('T')[0],
-          ageBand: currentResponse.ageBand,
-          planJson: currentResponse,
-          title: `${currentResponse.type === 'daily' ? 'Günlük' : 'Aylık'} Plan - ${currentResponse.date}`,
-        }),
+        body: JSON.stringify(planData),
       });
+
+      const responseData = await response.json();
+      console.log('Plan save response:', response.status, responseData);
 
       if (response.ok) {
         Alert.alert('Başarılı', 'Plan kaydedildi!', [
@@ -214,11 +222,12 @@ export default function Chat() {
           },
         ]);
       } else {
-        throw new Error('Plan kaydedilemedi');
+        console.error('Save failed:', responseData);
+        Alert.alert('Hata', `Plan kaydedilemedi: ${responseData.detail || 'Bilinmeyen hata'}`);
       }
     } catch (error) {
       console.error('Save plan error:', error);
-      Alert.alert('Hata', 'Plan kaydedilirken hata oluştu.');
+      Alert.alert('Hata', 'Plan kaydedilirken hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setIsLoading(false);
     }

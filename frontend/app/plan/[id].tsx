@@ -509,16 +509,35 @@ export default function PlanDetail() {
                     {new Date(photo.uploadedAt).toLocaleDateString('tr-TR')}
                   </Text>
                 </View>
-                <TouchableOpacity 
-                  style={styles.deletePhotoButton}
-                  onPress={() => deletePortfolioPhoto(photo.id)}
-                  accessibilityRole="button"
-                  {...(Platform.OS === 'web' && {
-                    onClick: () => deletePortfolioPhoto(photo.id)
-                  })}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#e74c3c" />
-                </TouchableOpacity>
+                {Platform.OS === 'web' ? (
+                  <button
+                    onClick={() => deletePortfolioPhoto(photo.id)}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      borderRadius: '15px',
+                      width: '30px',
+                      height: '30px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#e74c3c" />
+                  </button>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.deletePhotoButton}
+                    onPress={() => deletePortfolioPhoto(photo.id)}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#e74c3c" />
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
           </ScrollView>

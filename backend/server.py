@@ -770,6 +770,10 @@ async def get_monthly_plans(current_user: dict = Depends(get_current_user)):
     ]
 
 # Matrix/Search Routes
+@api_router.options("/matrix/search")
+async def matrix_search_options():
+    return {"message": "OK"}
+
 @api_router.get("/matrix/search")
 async def search_matrix(q: str = "", ageBand: str = ""):
     # This would search through the Maarif program data

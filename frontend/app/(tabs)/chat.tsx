@@ -2,59 +2,47 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
+  TextInput,
+  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://plan-tester-1.preview.emergentagent.com';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  timestamp: string;
+  timestamp?: Date;
 }
 
-interface AIResponse {
-  finalize: boolean;
-  type: 'daily' | 'monthly';
-  ageBand: string;
+interface PlanPreview {
   date?: string;
-  domainOutcomes?: any[];
-  blocks?: any;
-  followUpQuestions?: string[];
-  missingFields?: string[];
-  notes?: string;
+  ageBand?: string;
+  theme?: string;
+  activities?: Array<{title: string; location?: string; duration?: string}>;
 }
 
-export default function Chat() {
+export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [planPreview, setPlanPreview] = useState<PlanPreview | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [currentResponse, setCurrentResponse] = useState<AIResponse | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     loadUser();
-    // Add welcome message
-    setMessages([{
-      role: 'assistant',
-      content: 'Merhaba! Ben MaarifPlanner AI asistanınızım. Günlük veya aylık plan oluşturmanızda size yardımcı olacağım. Hangi yaş bandı için plan oluşturmak istiyorsunuz ve ne tür etkinlikler planlıyorsunuz?',
-      timestamp: new Date().toISOString(),
-    }]);
+    initializeChat();
   }, []);
 
   const loadUser = async () => {
@@ -68,8 +56,13 @@ export default function Chat() {
     }
   };
 
-  const getAuthToken = async () => {
-    return await AsyncStorage.getItem('authToken');
+  const initializeChat = () => {
+    const welcomeMessage: Message = {
+      role: 'assistant',
+      content: 'Merhaba! Ben MaarifPlanner AI Asistanınızım. Size Türkiye Yüzyılı Maarif Modeli ile uyumlu günlük ve aylık planlar oluşturmada yardımcı olabilirim.\n\nNasıl yardımcı olabilirim?',
+      timestamp: new Date(),
+    };
+    setMessages([welcomeMessage]);
   };
 
   const sendMessage = async () => {
@@ -78,7 +71,7 @@ export default function Chat() {
     const userMessage: Message = {
       role: 'user',
       content: inputText.trim(),
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -86,8 +79,9 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      const token = await getAuthToken();
+      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
+        Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
         router.replace('/auth/login');
         return;
       }
@@ -100,71 +94,51 @@ export default function Chat() {
         },
         body: JSON.stringify({
           message: inputText.trim(),
-          history: messages,
+          history: messages.slice(-10), // Last 10 messages for context
           ageBand: user?.ageDefault || '60_72',
           planType: 'daily',
         }),
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.replace('/auth/login');
-          return;
-        }
-        throw new Error('AI yanıt verirken hata oluştu');
-      }
-
-      const aiResponse: AIResponse = await response.json();
-      setCurrentResponse(aiResponse);
-
-      let responseText = '';
-      
-      if (aiResponse.finalize) {
-        responseText = 'Harika! Planınız hazır. Size bir önizleme göstereyim:\n\n';
+      if (response.ok) {
+        const data = await response.json();
         
-        if (aiResponse.domainOutcomes && aiResponse.domainOutcomes.length > 0) {
-          responseText += '📋 **Hedeflenen Alanlar:**\n';
-          aiResponse.domainOutcomes.forEach(outcome => {
-            responseText += `• ${outcome.code}\n`;
-          });
-          responseText += '\n';
-        }
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.message || 'Plan oluşturuldu!',
+          timestamp: new Date(),
+        };
 
-        if (aiResponse.blocks?.activities && aiResponse.blocks.activities.length > 0) {
-          responseText += '🎯 **Etkinlikler:**\n';
-          aiResponse.blocks.activities.forEach((activity: any, index: number) => {
-            responseText += `${index + 1}. ${activity.title}\n`;
-          });
-          responseText += '\n';
-        }
+        setMessages(prev => [...prev, assistantMessage]);
 
-        responseText += 'Planı kaydetmek ve PDF olarak indirmek ister misiniz?';
+        // If a plan was generated, show preview
+        if (data.finalize && data.type) {
+          setPlanPreview({
+            date: data.date,
+            ageBand: data.ageBand,
+            theme: data.theme,
+            activities: data.blocks?.activities?.slice(0, 3) || []
+          });
+        }
+        
+      } else if (response.status === 401) {
+        Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+        router.replace('/auth/login');
       } else {
-        responseText = 'Planınızı tamamlamak için birkaç ek bilgiye ihtiyacım var:\n\n';
-        
-        if (aiResponse.followUpQuestions && aiResponse.followUpQuestions.length > 0) {
-          aiResponse.followUpQuestions.forEach((question, index) => {
-            responseText += `${index + 1}. ${question}\n`;
-          });
-        }
+        const errorData = await response.json();
+        const errorMessage: Message = {
+          role: 'assistant',
+          content: 'Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
       }
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: responseText,
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
     } catch (error) {
       console.error('Chat error:', error);
-      Alert.alert('Hata', 'Mesaj gönderilirken hata oluştu. Lütfen tekrar deneyin.');
-      
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.',
-        timestamp: new Date().toISOString(),
+        content: 'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.',
+        timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -173,61 +147,18 @@ export default function Chat() {
   };
 
   const savePlan = async () => {
-    if (!currentResponse || !currentResponse.finalize) {
-      Alert.alert('Hata', 'Plan hazır değil. Lütfen AI ile plan oluşturmayı tamamlayın.');
-      return;
-    }
+    if (!planPreview) return;
 
-    setIsLoading(true);
     try {
-      const token = await getAuthToken();
+      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
-        router.replace('/auth/login');
+        Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
         return;
       }
 
-      // Generate proper date - ensure it's always YYYY-MM-DD format
-      const today = new Date();
-      const planDate = currentResponse.date || today.toISOString().split('T')[0];
-      
-      // Ensure ageBand is valid
-      const validAgeBands = ['36_48', '48_60', '60_72'];
-      let ageBand = currentResponse.ageBand || user?.ageDefault || '60_72';
-      if (!validAgeBands.includes(ageBand)) {
-        ageBand = '60_72'; // fallback to default
-      }
-
-      // Clean and validate planJson structure
-      const cleanPlanJson = {
-        ...currentResponse,
-        date: planDate,
-        ageBand: ageBand,
-        type: currentResponse.type || 'daily',
-        finalize: true,
-        // Ensure essential structure exists
-        blocks: currentResponse.blocks || {
-          startOfDay: '',
-          activities: [],
-          assessment: []
-        },
-        domainOutcomes: currentResponse.domainOutcomes || [],
-      };
-
-      // Prepare plan data with proper validation
-      const planData = {
-        date: planDate,
-        ageBand: ageBand,
-        planJson: cleanPlanJson,
-        title: `Günlük Plan - ${planDate}`,
-      };
-
-      console.log('💾 Saving plan data:', {
-        date: planData.date,
-        ageBand: planData.ageBand,
-        title: planData.title,
-        hasBlocks: !!planData.planJson.blocks,
-        hasOutcomes: planData.planJson.domainOutcomes?.length || 0
-      });
+      // Get the full plan from the last AI response
+      const lastAssistantMessage = messages.filter(m => m.role === 'assistant').pop();
+      if (!lastAssistantMessage) return;
 
       const response = await fetch(`${BACKEND_URL}/api/plans/daily`, {
         method: 'POST',
@@ -235,255 +166,153 @@ export default function Chat() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(planData),
+        body: JSON.stringify({
+          date: planPreview.date,
+          ageBand: planPreview.ageBand,
+          title: planPreview.theme || 'AI Destekli Günlük Plan',
+          planJson: planPreview, // This should be the full plan data
+        }),
       });
 
-      const responseData = await response.json();
-      console.log('📝 Plan save response:', response.status, responseData);
-
       if (response.ok) {
-        // Close preview modal if open
-        setShowPreview(false);
-        
-        Alert.alert('✅ Başarılı', 'Plan başarıyla kaydedildi!', [
+        const data = await response.json();
+        Alert.alert('Başarılı', 'Plan kaydedildi!', [
           {
-            text: 'Planları Görüntüle',
-            onPress: () => router.push('/(tabs)/plans'),
+            text: 'Görüntüle',
+            onPress: () => router.push(`/plan/${data.id}?type=daily`),
           },
-          {
-            text: 'Yeni Plan',
-            onPress: () => {
-              setMessages([{
-                role: 'assistant',
-                content: 'Harika! Yeni bir plan oluşturmak için hangi yaş bandı ve ne tür etkinlikler istiyorsunuz?',
-                timestamp: new Date().toISOString(),
-              }]);
-              setCurrentResponse(null);
-            },
-          },
+          { text: 'Tamam', style: 'cancel' },
         ]);
+        setPlanPreview(null);
       } else {
-        console.error('❌ Save failed:', responseData);
-        Alert.alert('Hata', `Plan kaydedilemedi: ${responseData.detail || 'Validation hatası'}`);
+        Alert.alert('Hata', 'Plan kaydedilemedi');
       }
     } catch (error) {
-      console.error('💥 Save plan error:', error);
-      Alert.alert('Hata', 'Plan kaydedilirken hata oluştu. İnternet bağlantınızı kontrol edip tekrar deneyin.');
-    } finally {
-      setIsLoading(false);
+      console.error('Save plan error:', error);
+      Alert.alert('Hata', 'Bağlantı hatası');
     }
   };
 
-  const clearChat = () => {
-    Alert.alert(
-      'Sohbeti Temizle',
-      'Tüm sohbet geçmişi silinecek. Emin misiniz?',
-      [
-        { text: 'İptal', style: 'cancel' },
-        {
-          text: 'Temizle',
-          style: 'destructive',
-          onPress: () => {
-            setMessages([{
-              role: 'assistant',
-              content: 'Merhaba! Ben MaarifPlanner AI asistanınızım. Günlük veya aylık plan oluşturmanızda size yardımcı olacağım. Hangi yaş bandı için plan oluşturmak istiyorsunuz ve ne tür etkinlikler planlıyorsunuz?',
-              timestamp: new Date().toISOString(),
-            }]);
-            setCurrentResponse(null);
-          },
-        },
-      ]
+  const renderMessage = (message: Message, index: number) => (
+    <View
+      key={index}
+      style={[
+        styles.messageContainer,
+        message.role === 'user' ? styles.userMessage : styles.assistantMessage,
+      ]}
+    >
+      <View style={[
+        styles.messageBubble,
+        message.role === 'user' ? styles.userBubble : styles.assistantBubble,
+      ]}>
+        <Text style={[
+          styles.messageText,
+          message.role === 'user' ? styles.userText : styles.assistantText,
+        ]}>
+          {message.content}
+        </Text>
+      </View>
+    </View>
+  );
+
+  const renderPlanPreview = () => {
+    if (!planPreview) return null;
+
+    return (
+      <View style={styles.planPreview}>
+        <View style={styles.previewHeader}>
+          <Ionicons name="document-text-outline" size={24} color="#3498db" />
+          <Text style={styles.previewTitle}>Plan Önizleme</Text>
+        </View>
+        
+        <View style={styles.previewContent}>
+          <Text style={styles.previewInfo}>📅 Tarih: {planPreview.date}</Text>
+          <Text style={styles.previewInfo}>👶 Yaş Grubu: {planPreview.ageBand}</Text>
+          {planPreview.theme && (
+            <Text style={styles.previewInfo}>🎯 Tema: {planPreview.theme}</Text>
+          )}
+          
+          {planPreview.activities && planPreview.activities.length > 0 && (
+            <View style={styles.activitiesPreview}>
+              <Text style={styles.activitiesTitle}>🎨 Etkinlikler:</Text>
+              {planPreview.activities.map((activity, index) => (
+                <Text key={index} style={styles.activityItem}>
+                  • {activity.title}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.previewActions}>
+          <TouchableOpacity style={styles.discardButton} onPress={() => setPlanPreview(null)}>
+            <Text style={styles.discardButtonText}>İptal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.saveButton} onPress={savePlan}>
+            <Text style={styles.saveButtonText}>Planı Kaydet</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Plan Asistanı</Text>
-        <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
-          <Ionicons name="refresh-outline" size={24} color="#3498db" />
-        </TouchableOpacity>
-      </View>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>💬 AI Plan Asistanı</Text>
+          {user && (
+            <Text style={styles.subtitle}>Merhaba, {user.name}!</Text>
+          )}
+        </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.chatContainer}
-      >
-        <ScrollView 
+        <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
-          {messages.map((message, index) => (
-            <View key={index} style={[
-              styles.messageContainer,
-              message.role === 'user' ? styles.userMessage : styles.assistantMessage
-            ]}>
-              <Text style={[
-                styles.messageText,
-                message.role === 'user' ? styles.userMessageText : styles.assistantMessageText
-              ]}>
-                {message.content}
-              </Text>
-              <Text style={styles.messageTime}>
-                {new Date(message.timestamp).toLocaleTimeString('tr-TR', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </Text>
-            </View>
-          ))}
-          
+          {messages.map(renderMessage)}
           {isLoading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#3498db" />
-              <Text style={styles.loadingText}>AI yanıt hazırlıyor...</Text>
+            <View style={[styles.messageContainer, styles.assistantMessage]}>
+              <View style={[styles.messageBubble, styles.assistantBubble]}>
+                <ActivityIndicator size="small" color="#7f8c8d" />
+                <Text style={styles.loadingText}>AI düşünüyor...</Text>
+              </View>
             </View>
           )}
         </ScrollView>
 
-        {currentResponse?.finalize && (
-          <View style={styles.actionContainer}>
-            <TouchableOpacity 
-              style={styles.previewButton}
-              onPress={() => setShowPreview(true)}
-            >
-              <Ionicons name="eye-outline" size={20} color="#3498db" />
-              <Text style={styles.previewButtonText}>Önizleme</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.saveButton}
-              onPress={savePlan}
-              disabled={isLoading}
-            >
-              <Ionicons name="save-outline" size={20} color="white" />
-              <Text style={styles.saveButtonText}>Planı Kaydet</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {renderPlanPreview()}
 
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.textInput}
+            placeholder="Mesajınızı yazın..."
             value={inputText}
             onChangeText={setInputText}
-            placeholder="Mesajınızı yazın..."
             multiline
-            maxLength={1000}
+            maxLength={500}
             onSubmitEditing={sendMessage}
+            blurOnSubmit={false}
           />
-          <TouchableOpacity 
-            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.disabledButton]}
+          <TouchableOpacity
+            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.disabledSendButton]}
             onPress={sendMessage}
             disabled={!inputText.trim() || isLoading}
           >
-            <Ionicons name="send" size={20} color="white" />
+            <Ionicons 
+              name="send" 
+              size={20} 
+              color={inputText.trim() && !isLoading ? '#fff' : '#bdc3c7'} 
+            />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-
-      {/* Plan Preview Modal */}
-      <Modal
-        visible={showPreview}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowPreview(false)}>
-              <Ionicons name="close" size={24} color="#3498db" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Plan Önizleme</Text>
-            <TouchableOpacity onPress={savePlan} disabled={isLoading}>
-              <Text style={styles.modalSaveText}>Kaydet</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            {currentResponse && (
-              <View>
-                <View style={styles.previewSection}>
-                  <Text style={styles.previewSectionTitle}>Plan Bilgileri</Text>
-                  <Text style={styles.previewItem}>📅 Tarih: {currentResponse.date || 'Bugün'}</Text>
-                  <Text style={styles.previewItem}>👶 Yaş Bandı: {currentResponse.ageBand || '60-72 Ay'}</Text>
-                  <Text style={styles.previewItem}>📝 Tür: {currentResponse.type === 'daily' ? 'Günlük Plan' : 'Aylık Plan'}</Text>
-                </View>
-
-                {currentResponse.domainOutcomes && currentResponse.domainOutcomes.length > 0 && (
-                  <View style={styles.previewSection}>
-                    <Text style={styles.previewSectionTitle}>Hedeflenen Alanlar</Text>
-                    {currentResponse.domainOutcomes.map((outcome: any, index: number) => (
-                      <View key={index} style={styles.outcomeContainer}>
-                        <Text style={styles.outcomeCode}>• {outcome.code}</Text>
-                        {outcome.indicators && outcome.indicators.length > 0 && (
-                          <View style={styles.indicatorsContainer}>
-                            {outcome.indicators.map((indicator: string, idx: number) => (
-                              <Text key={idx} style={styles.indicator}>  - {indicator}</Text>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {currentResponse.blocks?.startOfDay && (
-                  <View style={styles.previewSection}>
-                    <Text style={styles.previewSectionTitle}>Güne Başlama</Text>
-                    <Text style={styles.previewText}>{currentResponse.blocks.startOfDay}</Text>
-                  </View>
-                )}
-
-                {currentResponse.blocks?.activities && currentResponse.blocks.activities.length > 0 && (
-                  <View style={styles.previewSection}>
-                    <Text style={styles.previewSectionTitle}>Etkinlikler</Text>
-                    {currentResponse.blocks.activities.map((activity: any, index: number) => (
-                      <View key={index} style={styles.activityContainer}>
-                        <Text style={styles.activityTitle}>{index + 1}. {activity.title}</Text>
-                        {activity.materials && activity.materials.length > 0 && (
-                          <View>
-                            <Text style={styles.activitySubtitle}>Materyaller:</Text>
-                            {activity.materials.map((material: string, idx: number) => (
-                              <Text key={idx} style={styles.activityItem}>• {material}</Text>
-                            ))}
-                          </View>
-                        )}
-                        {activity.steps && activity.steps.length > 0 && (
-                          <View>
-                            <Text style={styles.activitySubtitle}>Adımlar:</Text>
-                            {activity.steps.map((step: string, idx: number) => (
-                              <Text key={idx} style={styles.activityItem}>{idx + 1}. {step}</Text>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {currentResponse.blocks?.assessment && currentResponse.blocks.assessment.length > 0 && (
-                  <View style={styles.previewSection}>
-                    <Text style={styles.previewSectionTitle}>Değerlendirme</Text>
-                    {currentResponse.blocks.assessment.map((item: string, index: number) => (
-                      <Text key={index} style={styles.previewItem}>• {item}</Text>
-                    ))}
-                  </View>
-                )}
-
-                {currentResponse.notes && (
-                  <View style={styles.previewSection}>
-                    <Text style={styles.previewSectionTitle}>Notlar</Text>
-                    <Text style={styles.previewText}>{currentResponse.notes}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -493,248 +322,175 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed',
   },
-  headerTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2c3e50',
+    marginBottom: 5,
   },
-  clearButton: {
-    padding: 4,
-  },
-  chatContainer: {
-    flex: 1,
+  subtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
   },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
-    padding: 16,
-    paddingBottom: 8,
+    padding: 20,
   },
   messageContainer: {
-    marginBottom: 16,
-    maxWidth: '80%',
+    marginBottom: 15,
   },
   userMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#3498db',
-    borderRadius: 16,
-    padding: 12,
+    alignItems: 'flex-end',
   },
   assistantMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
+    alignItems: 'flex-start',
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 18,
+  },
+  userBubble: {
+    backgroundColor: '#3498db',
+  },
+  assistantBubble: {
+    backgroundColor: '#fff',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   messageText: {
     fontSize: 16,
     lineHeight: 22,
   },
-  userMessageText: {
-    color: 'white',
+  userText: {
+    color: '#fff',
   },
-  assistantMessageText: {
+  assistantText: {
     color: '#2c3e50',
-  },
-  messageTime: {
-    fontSize: 12,
-    color: '#7f8c8d',
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
-    marginBottom: 16,
   },
   loadingText: {
-    marginLeft: 8,
+    marginLeft: 10,
     color: '#7f8c8d',
     fontSize: 14,
   },
-  actionContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    paddingTop: 8,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e1e8ed',
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#27ae60',
-    borderRadius: 8,
-    padding: 12,
-    flex: 1,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e1e8ed',
-    alignItems: 'flex-end',
-  },
-  textInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    maxHeight: 100,
-    marginRight: 8,
-  },
-  sendButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#bdc3c7',
-  },
-  previewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#3498db',
-    borderRadius: 8,
-    padding: 12,
-    flex: 1,
-    marginRight: 8,
-  },
-  previewButtonText: {
-    color: '#3498db',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e8ed',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-  },
-  modalSaveText: {
-    fontSize: 16,
-    color: '#27ae60',
-    fontWeight: 'bold',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 16,
-  },
-  previewSection: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+  planPreview: {
+    backgroundColor: '#fff',
+    margin: 20,
+    borderRadius: 10,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  previewSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 12,
-  },
-  previewItem: {
-    fontSize: 16,
-    color: '#2c3e50',
-    marginBottom: 4,
-    lineHeight: 22,
-  },
-  previewText: {
-    fontSize: 16,
-    color: '#2c3e50',
-    lineHeight: 24,
-  },
-  outcomeContainer: {
-    marginBottom: 12,
-  },
-  outcomeCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#3498db',
-    marginBottom: 4,
-  },
-  indicatorsContainer: {
-    marginLeft: 16,
-  },
-  indicator: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginBottom: 2,
-  },
-  activityContainer: {
-    marginBottom: 16,
-    paddingBottom: 16,
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
+    borderBottomColor: '#ecf0f1',
   },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  previewTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginLeft: 10,
+  },
+  previewContent: {
+    padding: 15,
+  },
+  previewInfo: {
+    fontSize: 14,
     color: '#2c3e50',
     marginBottom: 8,
   },
-  activitySubtitle: {
+  activitiesPreview: {
+    marginTop: 10,
+  },
+  activitiesTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#34495e',
-    marginTop: 8,
-    marginBottom: 4,
+    color: '#2c3e50',
+    marginBottom: 5,
   },
   activityItem: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#7f8c8d',
-    marginBottom: 2,
-    marginLeft: 8,
+    marginLeft: 10,
+    marginBottom: 3,
+  },
+  previewActions: {
+    flexDirection: 'row',
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#ecf0f1',
+  },
+  discardButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginRight: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+    borderRadius: 8,
+  },
+  discardButtonText: {
+    color: '#e74c3c',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#27ae60',
+    paddingVertical: 10,
+    marginLeft: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e1e8ed',
+  },
+  textInput: {
+    flex: 1,
+    backgroundColor: '#f1f2f6',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginRight: 10,
+    maxHeight: 100,
+    fontSize: 16,
+    color: '#2c3e50',
+  },
+  sendButton: {
+    backgroundColor: '#3498db',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disabledSendButton: {
+    backgroundColor: '#ecf0f1',
   },
 });

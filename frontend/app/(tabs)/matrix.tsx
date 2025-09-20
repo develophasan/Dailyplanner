@@ -2,46 +2,44 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://plan-tester-1.preview.emergentagent.com';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
-interface MatrixItem {
-  code: string;
+interface SearchResult {
+  id: string;
   title: string;
-  ageBand: string;
-  description: string;
-  area?: string;
+  content: string;
+  type: string;
+  relevance: number;
 }
 
-export default function Matrix() {
+export default function MatrixScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedAgeBand, setSelectedAgeBand] = useState('');
-  const [searchResults, setSearchResults] = useState<MatrixItem[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
     loadRecentSearches();
-    // Load initial popular codes
-    searchMatrix('');
   }, []);
 
   const loadRecentSearches = async () => {
     try {
-      const searches = await AsyncStorage.getItem('recentMatrixSearches');
-      if (searches) {
-        setRecentSearches(JSON.parse(searches));
+      const stored = await AsyncStorage.getItem('recentMatrixSearches');
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
       }
     } catch (error) {
       console.error('Error loading recent searches:', error);
@@ -49,210 +47,193 @@ export default function Matrix() {
   };
 
   const saveRecentSearch = async (query: string) => {
-    if (!query.trim()) return;
-    
     try {
-      const newSearches = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
-      setRecentSearches(newSearches);
-      await AsyncStorage.setItem('recentMatrixSearches', JSON.stringify(newSearches));
+      const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
+      setRecentSearches(updated);
+      await AsyncStorage.setItem('recentMatrixSearches', JSON.stringify(updated));
     } catch (error) {
       console.error('Error saving recent search:', error);
     }
   };
 
-  const searchMatrix = async (query: string = searchQuery) => {
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      Alert.alert('Uyarı', 'Lütfen arama terimi girin');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set('q', query.trim());
-      if (selectedAgeBand) params.set('ageBand', selectedAgeBand);
-
-      const response = await fetch(`${BACKEND_URL}/api/matrix/search?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Arama sonuçları yüklenemedi');
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+        router.replace('/auth/login');
+        return;
       }
 
-      const results = await response.json();
-      setSearchResults(results);
-      
-      if (query.trim()) {
-        saveRecentSearch(query.trim());
+      saveRecentSearch(searchQuery.trim());
+
+      const response = await fetch(`${BACKEND_URL}/api/matrix/search`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: searchQuery.trim(),
+          limit: 20,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results || []);
+      } else if (response.status === 401) {
+        Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+        router.replace('/auth/login');
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Hata', errorData.detail || 'Arama sırasında bir hata oluştu');
       }
     } catch (error) {
-      console.error('Matrix search error:', error);
-      Alert.alert('Hata', 'Arama yapılırken hata oluştu.');
+      console.error('Search error:', error);
+      Alert.alert('Hata', 'Bağlantı hatası. Lütfen tekrar deneyin.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    searchMatrix();
-  };
-
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSelectedAgeBand('');
-    searchMatrix('');
-  };
-
-  const selectRecentSearch = (query: string) => {
+  const handleRecentSearch = (query: string) => {
     setSearchQuery(query);
-    searchMatrix(query);
   };
 
-  const formatAgeBand = (ageBand: string) => {
-    const ageMap: { [key: string]: string } = {
-      '36_48': '36-48 Ay',
-      '48_60': '48-60 Ay',
-      '60_72': '60-72 Ay',
-    };
-    return ageMap[ageBand] || ageBand;
+  const clearRecentSearches = async () => {
+    try {
+      setRecentSearches([]);
+      await AsyncStorage.removeItem('recentMatrixSearches');
+    } catch (error) {
+      console.error('Error clearing recent searches:', error);
+    }
   };
 
-  const getAreaFromCode = (code: string) => {
-    if (code.startsWith('MAB')) return 'Matematik';
-    if (code.startsWith('TADB')) return 'Türkçe';
-    if (code.startsWith('HSAB')) return 'Fen';
-    if (code.startsWith('SNAB')) return 'Sanat';
-    if (code.startsWith('SDB')) return 'Sosyal';
-    if (code.startsWith('MHB')) return 'Hareket ve Sağlık';
-    if (code.startsWith('MÜZB')) return 'Müzik';
-    return 'Diğer';
-  };
-
-  const getAreaColor = (area: string) => {
-    const colors: { [key: string]: string } = {
-      'Matematik': '#e74c3c',
-      'Türkçe': '#3498db',
-      'Fen': '#27ae60',
-      'Sanat': '#f39c12',
-      'Sosyal': '#9b59b6',
-      'Hareket ve Sağlık': '#1abc9c',
-      'Müzik': '#e67e22',
-      'Diğer': '#95a5a6',
-    };
-    return colors[area] || '#95a5a6';
-  };
+  const renderSearchResult = (result: SearchResult) => (
+    <View key={result.id} style={styles.resultCard}>
+      <View style={styles.resultHeader}>
+        <Text style={styles.resultTitle}>{result.title}</Text>
+        <View style={styles.relevanceContainer}>
+          <Text style={styles.relevanceText}>{Math.round(result.relevance * 100)}%</Text>
+        </View>
+      </View>
+      <Text style={styles.resultContent} numberOfLines={3}>
+        {result.content}
+      </Text>
+      <View style={styles.resultFooter}>
+        <Text style={styles.resultType}>{result.type}</Text>
+        <TouchableOpacity style={styles.viewButton}>
+          <Text style={styles.viewButtonText}>Görüntüle</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Matrix & Kod Arama</Text>
+        <Text style={styles.title}>🔍 Matrix Arama</Text>
+        <Text style={styles.subtitle}>Eğitim içeriklerini keşfedin</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color="#7f8c8d" />
+          <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
+            placeholder="Arama terimini girin..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Kod veya alan ara (örn: MAB.1, matematik...)"
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-          {searchQuery ? (
-            <TouchableOpacity onPress={clearSearch}>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
               <Ionicons name="close-circle" size={20} color="#7f8c8d" />
             </TouchableOpacity>
-          ) : null}
+          )}
         </View>
-
-        <View style={styles.filterContainer}>
-          <Text style={styles.filterLabel}>Yaş Bandı:</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedAgeBand}
-              onValueChange={setSelectedAgeBand}
-              style={styles.picker}
-            >
-              <Picker.Item label="Tüm Yaşlar" value="" />
-              <Picker.Item label="36-48 Ay" value="36_48" />
-              <Picker.Item label="48-60 Ay" value="48_60" />
-              <Picker.Item label="60-72 Ay" value="60_72" />
-            </Picker>
-          </View>
-        </View>
-
+        
         <TouchableOpacity 
-          style={styles.searchButton} 
+          style={[styles.searchButton, isLoading && styles.disabledButton]}
           onPress={handleSearch}
           disabled={isLoading}
         >
-          <Ionicons name="search" size={20} color="white" />
-          <Text style={styles.searchButtonText}>
-            {isLoading ? 'Aranıyor...' : 'Ara'}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="search" size={20} color="#fff" />
+          )}
         </TouchableOpacity>
       </View>
 
-      {recentSearches.length > 0 && !searchQuery && (
-        <View style={styles.recentContainer}>
-          <Text style={styles.recentTitle}>Son Aramalar:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.recentTags}>
-              {recentSearches.map((search, index) => (
+      <ScrollView style={styles.content}>
+        {recentSearches.length > 0 && searchResults.length === 0 && (
+          <View style={styles.recentContainer}>
+            <View style={styles.recentHeader}>
+              <Text style={styles.recentTitle}>Son Aramalar</Text>
+              <TouchableOpacity onPress={clearRecentSearches}>
+                <Text style={styles.clearText}>Temizle</Text>
+              </TouchableOpacity>
+            </View>
+            {recentSearches.map((query, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.recentItem}
+                onPress={() => handleRecentSearch(query)}
+              >
+                <Ionicons name="time-outline" size={16} color="#7f8c8d" />
+                <Text style={styles.recentQuery}>{query}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {searchResults.length > 0 && (
+          <View style={styles.resultsContainer}>
+            <Text style={styles.resultsTitle}>
+              {searchResults.length} sonuç bulundu
+            </Text>
+            {searchResults.map(renderSearchResult)}
+          </View>
+        )}
+
+        {searchResults.length === 0 && searchQuery && !isLoading && (
+          <View style={styles.noResultsContainer}>
+            <Ionicons name="search-outline" size={64} color="#bdc3c7" />
+            <Text style={styles.noResultsText}>Sonuç bulunamadı</Text>
+            <Text style={styles.noResultsSubtext}>
+              Farklı anahtar kelimeler deneyiniz veya arama terimini değiştiriniz
+            </Text>
+          </View>
+        )}
+
+        {searchResults.length === 0 && !searchQuery && (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="library-outline" size={64} color="#bdc3c7" />
+            <Text style={styles.emptyText}>Matrix Arama</Text>
+            <Text style={styles.emptySubtext}>
+              Eğitim programı, etkinlikler ve kaynaklarda arama yapın
+            </Text>
+            <View style={styles.suggestionsContainer}>
+              <Text style={styles.suggestionsTitle}>Örnek Aramalar:</Text>
+              {['Matematik etkinlikleri', 'Sanat çalışmaları', 'Okuma yazma', 'Oyun örnekleri'].map((suggestion, index) => (
                 <TouchableOpacity
                   key={index}
-                  style={styles.recentTag}
-                  onPress={() => selectRecentSearch(search)}
+                  style={styles.suggestionChip}
+                  onPress={() => handleRecentSearch(suggestion)}
                 >
-                  <Text style={styles.recentTagText}>{search}</Text>
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-          </ScrollView>
-        </View>
-      )}
-
-      <ScrollView style={styles.resultsContainer}>
-        {searchResults.length === 0 && !isLoading ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="search-outline" size={64} color="#bdc3c7" />
-            <Text style={styles.emptyTitle}>Sonuç bulunamadı</Text>
-            <Text style={styles.emptySubtitle}>
-              Farklı anahtar kelimeler deneyin veya yaş bandı filtresini değiştirin
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.resultsList}>
-            {searchResults.map((item, index) => {
-              const area = getAreaFromCode(item.code);
-              const areaColor = getAreaColor(area);
-              
-              return (
-                <View key={index} style={styles.resultCard}>
-                  <View style={styles.resultHeader}>
-                    <View style={styles.codeContainer}>
-                      <Text style={styles.resultCode}>{item.code}</Text>
-                      <View style={[styles.areaTag, { backgroundColor: areaColor }]}>
-                        <Text style={styles.areaTagText}>{area}</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.resultAgeBand}>
-                      {formatAgeBand(item.ageBand)}
-                    </Text>
-                  </View>
-                  
-                  <Text style={styles.resultTitle}>{item.title}</Text>
-                  <Text style={styles.resultDescription}>{item.description}</Text>
-                  
-                  <View style={styles.resultActions}>
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="add-circle-outline" size={18} color="#3498db" />
-                      <Text style={styles.actionButtonText}>Plana Ekle</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="bookmark-outline" size={18} color="#f39c12" />
-                      <Text style={styles.actionButtonText}>Kaydet</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
           </View>
         )}
       </ScrollView>
@@ -266,202 +247,223 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed',
   },
-  headerTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#2c3e50',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
   },
   searchContainer: {
-    backgroundColor: 'white',
-    padding: 16,
+    flexDirection: 'row',
+    padding: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed',
   },
   searchInputContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
+    backgroundColor: '#f1f2f6',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginRight: 10,
+  },
+  searchIcon: {
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
+    paddingVertical: 12,
     fontSize: 16,
-    marginLeft: 8,
     color: '#2c3e50',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#2c3e50',
-    marginRight: 12,
-  },
-  pickerContainer: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-  },
-  picker: {
-    height: 40,
+  clearButton: {
+    padding: 5,
   },
   searchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#3498db',
-    borderRadius: 8,
+    paddingHorizontal: 20,
     paddingVertical: 12,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  searchButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
+  disabledButton: {
+    backgroundColor: '#95a5a6',
+  },
+  content: {
+    flex: 1,
   },
   recentContainer: {
-    backgroundColor: 'white',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e8ed',
+    padding: 20,
+    backgroundColor: '#fff',
+    marginBottom: 10,
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   recentTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#7f8c8d',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
   },
-  recentTags: {
+  clearText: {
+    color: '#e74c3c',
+    fontSize: 14,
+  },
+  recentItem: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
   },
-  recentTag: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
-  },
-  recentTagText: {
-    fontSize: 14,
-    color: '#3498db',
+  recentQuery: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#2c3e50',
   },
   resultsContainer: {
-    flex: 1,
+    padding: 20,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#2c3e50',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  resultsList: {
-    padding: 16,
+    marginBottom: 15,
   },
   resultCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   resultHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  resultCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginRight: 8,
-  },
-  areaTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  areaTagText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  resultAgeBand: {
-    backgroundColor: '#ecf0f1',
-    color: '#2c3e50',
-    fontSize: 12,
-    fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    marginBottom: 10,
   },
   resultTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 10,
   },
-  resultDescription: {
+  relevanceContainer: {
+    backgroundColor: '#3498db',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  relevanceText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  resultContent: {
     fontSize: 14,
     color: '#7f8c8d',
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  resultActions: {
+  resultFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  actionButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 8,
-    marginHorizontal: 4,
-    borderRadius: 6,
-    backgroundColor: '#f8f9fa',
   },
-  actionButtonText: {
+  resultType: {
+    fontSize: 12,
+    color: '#95a5a6',
+    backgroundColor: '#ecf0f1',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  viewButton: {
+    backgroundColor: '#27ae60',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  viewButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  noResultsContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#7f8c8d',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  noResultsSubtext: {
     fontSize: 14,
-    color: '#3498db',
-    marginLeft: 4,
+    color: '#95a5a6',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#7f8c8d',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#95a5a6',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 30,
+  },
+  suggestionsContainer: {
+    alignItems: 'center',
+  },
+  suggestionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 15,
+  },
+  suggestionChip: {
+    backgroundColor: '#3498db',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  suggestionText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '500',
   },
 });

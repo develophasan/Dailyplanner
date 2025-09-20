@@ -5,16 +5,16 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://plan-tester-1.preview.emergentagent.com';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 interface Plan {
   id: string;
@@ -22,16 +22,15 @@ interface Plan {
   month?: string;
   ageBand: string;
   title: string;
+  planJson: any;
   createdAt: string;
   pdfUrl?: string;
 }
 
-export default function Plans() {
+export default function PlansScreen() {
   const [activeTab, setActiveTab] = useState<'daily' | 'monthly'>('daily');
-  const [dailyPlans, setDailyPlans] = useState<Plan[]>([]);
-  const [monthlyPlans, setMonthlyPlans] = useState<Plan[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadPlans();
@@ -87,76 +86,75 @@ export default function Plans() {
         return;
       }
 
-      const endpoint = activeTab === 'daily' ? '/api/plans/daily' : '/api/plans/monthly';
-      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      const endpoint = activeTab === 'daily' ? 'daily' : 'monthly';
+      const response = await fetch(`${BACKEND_URL}/api/plans/${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.replace('/auth/login');
-          return;
-        }
-        throw new Error('Planlar yüklenemedi');
-      }
-
-      const plans = await response.json();
-      
-      if (activeTab === 'daily') {
-        setDailyPlans(plans);
+      if (response.ok) {
+        const data = await response.json();
+        setPlans(data);
+      } else if (response.status === 401) {
+        Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+        router.replace('/auth/login');
       } else {
-        setMonthlyPlans(plans);
+        console.error('Failed to load plans:', response.status);
       }
     } catch (error) {
-      console.error('Load plans error:', error);
-      Alert.alert('Hata', 'Planlar yüklenirken hata oluştu.');
+      console.error('Error loading plans:', error);
+      Alert.alert('Hata', 'Planlar yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadPlans();
-    setRefreshing(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('tr-TR');
-  };
-
-  const formatAgeBand = (ageBand: string) => {
-    const ageMap: { [key: string]: string } = {
-      '36_48': '36-48 Ay',
-      '48_60': '48-60 Ay',
-      '60_72': '60-72 Ay',
-    };
-    return ageMap[ageBand] || ageBand;
-  };
-
-  const viewPlan = (planId: string) => {
-    router.push(`/plan/${planId}?type=${activeTab}`);
   };
 
   const createNewPlan = () => {
     router.push('/(tabs)/chat');
   };
 
-  const currentPlans = activeTab === 'daily' ? dailyPlans : monthlyPlans;
+  const viewPlan = (planId: string) => {
+    router.push(`/plan/${planId}?type=${activeTab}`);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatAgeBand = (ageBand: string) => {
+    switch (ageBand) {
+      case '36_48':
+        return '36-48 Ay';
+      case '48_60':
+        return '48-60 Ay';
+      case '60_72':
+        return '60-72 Ay';
+      default:
+        return ageBand;
+    }
+  };
+
+  const currentPlans = plans.filter(plan => 
+    activeTab === 'daily' ? plan.date : plan.month
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Planlarım</Text>
+        <Text style={styles.title}>📋 Planlarım</Text>
         <TouchableOpacity onPress={createNewPlan} style={styles.addButton}>
-          <Ionicons name="add" size={24} color="white" />
+          <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabContainer}>
+      <View style={styles.tabsContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'daily' && styles.activeTab]}
           onPress={() => setActiveTab('daily')}
@@ -175,18 +173,16 @@ export default function Plans() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.plansContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {currentPlans.length === 0 ? (
+      <ScrollView style={styles.content}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3498db" />
+            <Text style={styles.loadingText}>Planlar yükleniyor...</Text>
+          </View>
+        ) : currentPlans.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="document-outline" size={64} color="#bdc3c7" />
-            <Text style={styles.emptyTitle}>
-              {activeTab === 'daily' ? 'Günlük plan' : 'Aylık plan'} bulunamadı
-            </Text>
+            <Text style={styles.emptyTitle}>Henüz plan bulunmuyor</Text>
             <Text style={styles.emptySubtitle}>
               Yeni bir plan oluşturmak için AI asistanı kullanın
             </Text>
@@ -266,33 +262,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed',
   },
-  headerTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
   addButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    backgroundColor: '#27ae60',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
-  tabContainer: {
+  tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed',
   },
   tab: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 15,
     alignItems: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
@@ -302,99 +303,118 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    color: '#7f8c8d',
     fontWeight: '500',
+    color: '#7f8c8d',
   },
   activeTabText: {
     color: '#3498db',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  plansContainer: {
+  content: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#7f8c8d',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    paddingHorizontal: 40,
+    paddingTop: 100,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginTop: 16,
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#7f8c8d',
+    marginTop: 20,
+    marginBottom: 10,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 8,
+    color: '#95a5a6',
     textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24,
   },
   createButton: {
     backgroundColor: '#3498db',
-    borderRadius: 8,
-    paddingVertical: 12, 
-    paddingHorizontal: 24,
-    marginTop: 24,
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   createButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
   plansList: {
-    padding: 16,
+    padding: 20,
   },
   planCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    padding: 20,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    marginBottom: 15,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   planHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   planTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#2c3e50',
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
   },
   planAgeBand: {
     backgroundColor: '#3498db',
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: '#fff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    fontSize: 12,
+    fontWeight: '600',
   },
   planInfo: {
-    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
   planInfoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
   },
   planInfoText: {
+    marginLeft: 5,
     fontSize: 14,
     color: '#7f8c8d',
-    marginLeft: 8,
   },
   planActions: {
     flexDirection: 'row',
-    marginBottom: 8,
+    justifyContent: 'flex-start',
+    marginBottom: 10,
   },
   actionButton: {
     flexDirection: 'row',

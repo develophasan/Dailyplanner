@@ -50,15 +50,22 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        // Save token
+        // Save token and navigation state
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
+        await AsyncStorage.setItem('navigationInProgress', 'true');
         
         if (Platform.OS === 'web') {
           alert('Giriş başarılı!');
         } else {
           Alert.alert('Başarılı', 'Giriş başarılı!');
         }
+        
+        // Clear navigation flag after a short delay to allow navigation to complete
+        setTimeout(async () => {
+          await AsyncStorage.removeItem('navigationInProgress');
+        }, 2000);
+        
         router.replace('/(tabs)/chat');
       } else {
         if (Platform.OS === 'web') {

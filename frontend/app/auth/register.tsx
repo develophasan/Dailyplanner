@@ -223,19 +223,16 @@ export default function Register() {
               </View>
             </View>
 
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.registerButton, isLoading && styles.disabledButton]}
               onPress={handleRegister}
               disabled={isLoading}
-              accessibilityRole={Platform.OS === 'web' ? 'button' : undefined}
-              {...(Platform.OS === 'web' && {
-                onClick: handleRegister
-              })}
+              accessibilityRole="button"
             >
               <Text style={styles.registerButtonText}>
                 {isLoading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>Zaten hesabınız var mı? </Text>

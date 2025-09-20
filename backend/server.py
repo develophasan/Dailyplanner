@@ -305,9 +305,15 @@ async def create_daily_plan(plan_data: DailyPlanCreate, current_user: dict = Dep
     try:
         logger.info(f"Creating daily plan for user {current_user['_id']}: {plan_data}")
         
+        # Validate date format
+        try:
+            plan_date = datetime.fromisoformat(plan_data.date)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid date format. Use YYYY-MM-DD format.")
+        
         plan_dict = {
             "userId": ObjectId(current_user["_id"]),
-            "date": datetime.fromisoformat(plan_data.date),
+            "date": plan_date,
             "ageBand": plan_data.ageBand,
             "planJson": plan_data.planJson,
             "title": plan_data.title or f"Günlük Plan - {plan_data.date}",
@@ -324,6 +330,8 @@ async def create_daily_plan(plan_data: DailyPlanCreate, current_user: dict = Dep
             "id": str(result.inserted_id),
             "message": "Daily plan created successfully"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating daily plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating plan: {str(e)}")

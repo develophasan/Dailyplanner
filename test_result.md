@@ -228,15 +228,18 @@ frontend:
 
   - task: "AI Chat Interface"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/frontend/app/(tabs)/chat.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Chat interface with AI responses and plan saving functionality"
+      - working: false
+        agent: "user"
+        comment: "User reports: Günlük plan oluşturdum ai ile sohbet ile ama planı kaydet diyorum tepki yok önizleme istiyorum ayrıca günlük planlar sayfasında listelenmedi oluşturulan bu plan"
 
   - task: "Plans List and Detail View"
     implemented: true

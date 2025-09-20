@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -32,6 +32,17 @@ db = client[DB_NAME]
 
 # FastAPI app
 app = FastAPI(title="MaarifPlanner API", version="1.0.0")
+
+# CORS Configuration - COMPLETE RESET
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"]  # Expose all headers
+)
+
 api_router = APIRouter(prefix="/api")
 
 # Security

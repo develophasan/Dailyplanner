@@ -138,7 +138,7 @@ export default function Plans() {
   };
 
   const viewPlan = (planId: string) => {
-    router.push(`/plan/${planId}`);
+    router.push(`/plan/${planId}?type=${activeTab}`);
   };
 
   const createNewPlan = () => {

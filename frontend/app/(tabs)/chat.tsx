@@ -305,6 +305,14 @@ export default function Chat() {
         {currentResponse?.finalize && (
           <View style={styles.actionContainer}>
             <TouchableOpacity 
+              style={styles.previewButton}
+              onPress={() => setShowPreview(true)}
+            >
+              <Ionicons name="eye-outline" size={20} color="#3498db" />
+              <Text style={styles.previewButtonText}>Önizleme</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
               style={styles.saveButton}
               onPress={savePlan}
               disabled={isLoading}

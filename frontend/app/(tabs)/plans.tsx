@@ -42,40 +42,54 @@ export default function PlansScreen() {
   };
 
   const deletePlan = async (planId: string, planType: 'daily' | 'monthly') => {
-    Alert.alert(
-      'Planı Sil',
-      'Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
-      [
-        { text: 'İptal', style: 'cancel' },
-        { 
-          text: 'Sil', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await getAuthToken();
-              if (!token) return;
+    const confirmDelete = Platform.OS === 'web' 
+      ? confirm('Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Planı Sil',
+            'Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            [
+              { text: 'İptal', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Sil', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
 
-              const response = await fetch(`${BACKEND_URL}/api/plans/${planType}/${planId}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
+    if (!confirmDelete) return;
 
-              if (response.ok) {
-                Alert.alert('Başarılı', 'Plan silindi');
-                loadPlans(); // Refresh plans
-              } else {
-                Alert.alert('Hata', 'Plan silinirken bir hata oluştu');
-              }
-            } catch (error) {
-              console.error('Plan silme hatası:', error);
-              Alert.alert('Hata', 'Bağlantı hatası');
-            }
-          }
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${BACKEND_URL}/api/plans/${planType}/${planId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        if (Platform.OS === 'web') {
+          alert('Plan silindi');
+        } else {
+          Alert.alert('Başarılı', 'Plan silindi');
         }
-      ]
-    );
+        loadPlans(); // Refresh plans
+      } else {
+        if (Platform.OS === 'web') {
+          alert('Plan silinirken bir hata oluştu');
+        } else {
+          Alert.alert('Hata', 'Plan silinirken bir hata oluştu');
+        }
+      }
+    } catch (error) {
+      console.error('Plan silme hatası:', error);
+      if (Platform.OS === 'web') {
+        alert('Bağlantı hatası');
+      } else {
+        Alert.alert('Hata', 'Bağlantı hatası');
+      }
+    }
   };
 
   const loadPlans = async () => {

@@ -432,6 +432,15 @@ test_plan:
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+  completed_new_features:
+    - "Calendar Page Plan Indicators (Blue Dots)"
+    - "Calendar Date Click Navigation" 
+    - "Plans Page Delete Buttons"
+    - "Plan Detail 4-Tab System"
+    - "Portfolio Tab Features"
+    - "Portfolio Photo Upload Modal"
+    - "Plan Detail Header Delete Button"
+    - "Mobile Responsive Design"
 
 agent_communication:
   - agent: "main"

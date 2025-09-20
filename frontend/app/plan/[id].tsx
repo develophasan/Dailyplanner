@@ -472,6 +472,10 @@ export default function PlanDetail() {
           <TouchableOpacity 
             style={styles.addPhotoButton}
             onPress={handleAddPortfolio}
+            accessibilityRole="button"
+            {...(Platform.OS === 'web' && {
+              onClick: handleAddPortfolio
+            })}
           >
             <Ionicons name="camera" size={20} color="#fff" />
             <Text style={styles.addPhotoText}>Fotoğraf Ekle</Text>

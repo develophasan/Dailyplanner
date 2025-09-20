@@ -2,13 +2,12 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: [
-      ["babel-preset-expo", { jsxImportSource: "nativewind" }]
+      "babel-preset-expo"
     ],
     plugins: [
-      // NOTE: expo-router/babel is a temporary workaround for Expo SDK 49
-      // you usually don't need this!
       "expo-router/babel",
-      "react-native-reanimated/plugin",
+      // Temporarily disabled due to worklets issue
+      // "react-native-reanimated/plugin",
     ],
   };
 };

@@ -545,6 +545,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#27ae60',
     borderRadius: 8,
     padding: 12,
+    flex: 1,
   },
   saveButtonText: {
     color: 'white',

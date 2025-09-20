@@ -228,7 +228,7 @@ frontend:
 
   - task: "AI Chat Interface"
     implemented: true
-    working: false
+    working: "partial"
     file: "/app/frontend/app/(tabs)/chat.tsx"
     stuck_count: 1
     priority: "high"
@@ -240,6 +240,9 @@ frontend:
       - working: false
         agent: "user"
         comment: "User reports: Günlük plan oluşturdum ai ile sohbet ile ama planı kaydet diyorum tepki yok önizleme istiyorum ayrıca günlük planlar sayfasında listelenmedi oluşturulan bu plan"
+      - working: "partial"
+        agent: "main"
+        comment: "PARTIAL FIX: Added plan preview modal with detailed plan display. Plan saving still returns 422 error from backend - investigating data validation issue."
 
   - task: "Plans List and Detail View"
     implemented: true

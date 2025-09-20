@@ -232,23 +232,41 @@ export default function PlansScreen() {
                     </TouchableOpacity>
                   )}
                   
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.deleteButton]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      deletePlan(plan.id, activeTab as 'daily' | 'monthly');
-                    }}
-                    accessibilityRole="button"
-                    {...(Platform.OS === 'web' && {
-                      onClick: (e: any) => {
+                  {Platform.OS === 'web' ? (
+                    <button
+                      style={{
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        marginRight: 16,
+                      }}
+                      onClick={(e) => {
                         e.stopPropagation();
                         deletePlan(plan.id, activeTab as 'daily' | 'monthly');
-                      }
-                    })}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#e74c3c" />
-                    <Text style={[styles.actionButtonText, styles.deleteText]}>Sil</Text>
-                  </TouchableOpacity>
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#e74c3c" />
+                      <span style={{ fontSize: 14, color: '#e74c3c', marginLeft: 4, fontWeight: '500' }}>
+                        Sil
+                      </span>
+                    </button>
+                  ) : (
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.deleteButton]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        deletePlan(plan.id, activeTab as 'daily' | 'monthly');
+                      }}
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#e74c3c" />
+                      <Text style={[styles.actionButtonText, styles.deleteText]}>Sil</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 
                 <View style={styles.planCardFooter}>

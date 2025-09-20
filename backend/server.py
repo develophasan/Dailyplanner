@@ -470,6 +470,10 @@ Günlük yaşam becerileri ve sosyal öğrenmeyi destekleyici rutinler
 **SADECE JSON FORMATINDA CEVAP VER, HİÇBİR AÇIKLAMA YAPMA. TÜM ALANLAR PROFESYONEL SEVİYEDE DOLU OLMALI.**"""
 
 # Auth Routes
+@api_router.options("/auth/register")
+async def register_options():
+    return {}
+
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     # Check if user exists

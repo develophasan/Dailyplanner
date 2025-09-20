@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://plan-tester-1.preview.emergentagent.com';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
-export default function Index() {
+export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -18,14 +19,13 @@ export default function Index() {
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
-        // Validate token
+        // Verify token with backend
         const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
           },
         });
-
+        
         if (response.ok) {
           // User is authenticated, redirect to main app
           router.replace('/(tabs)/chat');
@@ -33,15 +33,15 @@ export default function Index() {
         } else {
           // Token is invalid, remove it
           await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('user');
         }
       }
-      
-      // No valid token, show welcome screen
-      setIsLoading(false);
     } catch (error) {
       console.error('Auth check error:', error);
-      setIsLoading(false);
+      // If there's an error, treat as unauthenticated
     }
+    
+    setIsLoading(false);
   };
 
   const handleLogin = () => {
@@ -56,8 +56,7 @@ export default function Index() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>MaarifPlanner</Text>
-          <Text style={styles.loadingSubtext}>Yükleniyor...</Text>
+          <Text style={styles.loadingText}>Yükleniyor...</Text>
         </View>
       </SafeAreaView>
     );
@@ -65,59 +64,51 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.welcomeContainer}>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Ionicons name="school-outline" size={80} color="#3498db" />
           <Text style={styles.title}>MaarifPlanner</Text>
-          <Text style={styles.subtitle}>Türkiye Yüzyılı Maarif Modeli</Text>
-          <Text style={styles.subtitle}>Okul Öncesi Plan Asistanı</Text>
-          
-          <View style={styles.featureContainer}>
-            <Text style={styles.featureTitle}>Özellikler</Text>
-            
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🤖</Text>
-              <Text style={styles.featureText}>AI destekli plan oluşturma</Text>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>📋</Text>
-              <Text style={styles.featureText}>Günlük ve aylık planlar</Text>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>📄</Text>
-              <Text style={styles.featureText}>PDF çıktı alma</Text>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>📅</Text>
-              <Text style={styles.featureText}>Takvim entegrasyonu</Text>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🔍</Text>
-              <Text style={styles.featureText}>Kod ve alan araması</Text>
-            </View>
+          <Text style={styles.subtitle}>
+            Türkiye Yüzyılı Maarif Modeli ile AI Destekli Eğitim Planlama
+          </Text>
+        </View>
+
+        <View style={styles.features}>
+          <View style={styles.feature}>
+            <Ionicons name="calendar-outline" size={24} color="#27ae60" />
+            <Text style={styles.featureText}>Günlük ve Aylık Plan Oluşturma</Text>
           </View>
           
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-              <Text style={styles.primaryButtonText}>Giriş Yap</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleRegister}>
-              <Text style={styles.secondaryButtonText}>Kayıt Ol</Text>
-            </TouchableOpacity>
+          <View style={styles.feature}>
+            <Ionicons name="chatbubble-outline" size={24} color="#e74c3c" />
+            <Text style={styles.featureText}>AI Destekli Plan Asistanı</Text>
           </View>
           
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>
-              Bu uygulama Türkiye Yüzyılı Maarif Modeli Okul Öncesi programına göre 
-              öğretmenlerin günlük ve aylık planlarını AI desteği ile oluşturmasına yardımcı olur.
-            </Text>
+          <View style={styles.feature}>
+            <Ionicons name="search-outline" size={24} color="#f39c12" />
+            <Text style={styles.featureText}>Matrix Arama ve Keşif</Text>
+          </View>
+          
+          <View style={styles.feature}>
+            <Ionicons name="document-text-outline" size={24} color="#9b59b6" />
+            <Text style={styles.featureText}>Plan Arşivi ve Yönetimi</Text>
           </View>
         </View>
-      </ScrollView>
+
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <Text style={styles.loginButtonText}>Giriş Yap</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+            <Text style={styles.registerButtonText}>Kayıt Ol</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.footerText}>
+          Milli Eğitim Bakanlığı Okul Öncesi Eğitim Programı ile uyumlu
+        </Text>
+      </View>
     </SafeAreaView>
   );
 }
@@ -127,115 +118,98 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  scrollContainer: {
-    flexGrow: 1,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  loadingSubtext: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#7f8c8d',
   },
-  welcomeContainer: {
+  content: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
+    padding: 20,
+    justifyContent: 'space-between',
+  },
+  header: {
+    alignItems: 'center',
+    marginTop: 40,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#2c3e50',
-    textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: '#34495e',
+    color: '#7f8c8d',
     textAlign: 'center',
-    marginBottom: 4,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
-  featureContainer: {
-    marginTop: 32,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  features: {
+    marginVertical: 40,
   },
-  featureTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  featureItem: {
+  feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  featureIcon: {
-    fontSize: 20,
-    marginRight: 12,
-    width: 32,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   featureText: {
     fontSize: 16,
-    color: '#34495e',
+    color: '#2c3e50',
+    marginLeft: 15,
     flex: 1,
   },
-  buttonContainer: {
-    marginTop: 32,
-    gap: 16,
+  actions: {
+    marginBottom: 20,
   },
-  primaryButton: {
+  loginButton: {
     backgroundColor: '#3498db',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
+    marginBottom: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
-  primaryButtonText: {
-    color: 'white',
+  loginButtonText: {
+    color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  secondaryButton: {
+  registerButton: {
     backgroundColor: 'transparent',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#3498db',
   },
-  secondaryButtonText: {
+  registerButtonText: {
     color: '#3498db',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  infoContainer: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: '#e8f4f8',
-    borderRadius: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#2c3e50',
+  footerText: {
+    fontSize: 12,
+    color: '#95a5a6',
     textAlign: 'center',
-    lineHeight: 20,
+    paddingHorizontal: 20,
+    lineHeight: 18,
   },
 });

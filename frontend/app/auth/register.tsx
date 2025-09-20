@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://plan-tester-1.preview.emergentagent.com';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
-export default function Register() {
+export default function RegisterScreen() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -115,101 +116,93 @@ export default function Register() {
     }
   };
 
-  const goToLogin = () => {
-    router.push('/auth/login');
-  };
-
-  const goBack = () => {
-    router.back();
-  };
-
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={goBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Geri</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#2c3e50" />
             </TouchableOpacity>
             <Text style={styles.title}>Kayıt Ol</Text>
-            <Text style={styles.subtitle}>MaarifPlanner hesabı oluşturun</Text>
+            <Text style={styles.subtitle}>Hesap oluşturun</Text>
           </View>
 
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Ad Soyad *</Text>
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Ad ve Soyad</Text>
               <TextInput
                 style={styles.input}
+                placeholder="Adınızı ve soyadınızı girin"
                 value={formData.name}
                 onChangeText={(value) => updateFormData('name', value)}
-                placeholder="Adınızı ve soyadınızı girin"
+                autoCapitalize="words"
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>E-posta *</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>E-posta</Text>
               <TextInput
                 style={styles.input}
+                placeholder="ornek@email.com"
                 value={formData.email}
                 onChangeText={(value) => updateFormData('email', value)}
-                placeholder="ornek@email.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Şifre *</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Şifre</Text>
               <TextInput
                 style={styles.input}
+                placeholder="En az 6 karakter"
                 value={formData.password}
                 onChangeText={(value) => updateFormData('password', value)}
-                placeholder="En az 6 karakter"
                 secureTextEntry
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Şifre Tekrar *</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Şifre Tekrar</Text>
               <TextInput
                 style={styles.input}
+                placeholder="Şifrenizi tekrar girin"
                 value={formData.confirmPassword}
                 onChangeText={(value) => updateFormData('confirmPassword', value)}
-                placeholder="Şifrenizi tekrar girin"
                 secureTextEntry
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Okul</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Okul (isteğe bağlı)</Text>
               <TextInput
                 style={styles.input}
+                placeholder="Okulunuzun adı (isteğe bağlı)"
                 value={formData.school}
                 onChangeText={(value) => updateFormData('school', value)}
-                placeholder="Okulunuzun adı (isteğe bağlı)"
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Sınıf</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Sınıf (isteğe bağlı)</Text>
               <TextInput
                 style={styles.input}
+                placeholder="Sınıf adı (isteğe bağlı)"
                 value={formData.className}
                 onChangeText={(value) => updateFormData('className', value)}
-                placeholder="Sınıf adı (isteğe bağlı)"
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Varsayılan Yaş Bandı</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Varsayılan Yaş Grubu</Text>
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={formData.ageDefault}
@@ -233,17 +226,17 @@ export default function Register() {
                 {isLoading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
               </Text>
             </Pressable>
+          </View>
 
-            <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Zaten hesabınız var mı? </Text>
-              <TouchableOpacity onPress={goToLogin}>
-                <Text style={styles.loginLink}>Giriş yapın</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Zaten hesabınız var mı? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/login')}>
+              <Text style={styles.footerLink}>Giriş Yap</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -252,22 +245,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
+  scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: 20,
   },
   header: {
-    marginBottom: 32,
+    alignItems: 'center',
+    marginBottom: 30,
   },
   backButton: {
-    marginBottom: 16,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#3498db',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    padding: 10,
   },
   title: {
     fontSize: 28,
@@ -279,60 +269,74 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#7f8c8d',
   },
-  formContainer: {
+  form: {
     flex: 1,
   },
-  inputContainer: {
+  inputGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#2c3e50',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
+    color: '#2c3e50',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   pickerContainer: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   picker: {
     height: 50,
   },
   registerButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#27ae60',
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   disabledButton: {
-    backgroundColor: '#bdc3c7',
+    backgroundColor: '#95a5a6',
   },
   registerButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  loginContainer: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    alignItems: 'center',
+    marginTop: 30,
   },
-  loginText: {
+  footerText: {
     fontSize: 16,
     color: '#7f8c8d',
   },
-  loginLink: {
+  footerLink: {
     fontSize: 16,
     color: '#3498db',
     fontWeight: '500',

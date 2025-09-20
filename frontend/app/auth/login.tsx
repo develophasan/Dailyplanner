@@ -13,12 +13,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Constants from 'expo-constants';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://plan-tester-1.preview.emergentagent.com';
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
-export default function Login() {
+export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -83,50 +84,41 @@ export default function Login() {
     }
   };
 
-  const goToRegister = () => {
-    router.push('/auth/register');
-  };
-
-  const goBack = () => {
-    router.back();
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={goBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Geri</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#2c3e50" />
             </TouchableOpacity>
             <Text style={styles.title}>Giriş Yap</Text>
-            <Text style={styles.subtitle}>MaarifPlanner hesabınıza giriş yapın</Text>
+            <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
           </View>
 
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
               <Text style={styles.label}>E-posta</Text>
               <TextInput
                 style={styles.input}
+                placeholder="ornek@email.com"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="ornek@email.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
               />
             </View>
 
-            <View style={styles.inputContainer}>
+            <View style={styles.inputGroup}>
               <Text style={styles.label}>Şifre</Text>
               <TextInput
                 style={styles.input}
+                placeholder="Şifrenizi girin"
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Şifrenizi girin"
                 secureTextEntry
               />
             </View>
@@ -141,17 +133,17 @@ export default function Login() {
                 {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
               </Text>
             </Pressable>
+          </View>
 
-            <View style={styles.registerContainer}>
-              <Text style={styles.registerText}>Hesabınız yok mu? </Text>
-              <TouchableOpacity onPress={goToRegister}>
-                <Text style={styles.registerLink}>Kayıt olun</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Hesabınız yok mu? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/register')}>
+              <Text style={styles.footerLink}>Kayıt Ol</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -160,22 +152,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
+  scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: 20,
+    justifyContent: 'center',
   },
   header: {
-    marginBottom: 32,
+    alignItems: 'center',
+    marginBottom: 40,
   },
   backButton: {
-    marginBottom: 16,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#3498db',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    padding: 10,
   },
   title: {
     fontSize: 28,
@@ -187,51 +177,61 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#7f8c8d',
   },
-  formContainer: {
-    flex: 1,
+  form: {
+    marginBottom: 40,
   },
-  inputContainer: {
+  inputGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#2c3e50',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
+    color: '#2c3e50',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   loginButton: {
     backgroundColor: '#3498db',
-    borderRadius: 8,
-    padding: 16,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   disabledButton: {
-    backgroundColor: '#bdc3c7',
+    backgroundColor: '#95a5a6',
   },
   loginButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  registerContainer: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    alignItems: 'center',
   },
-  registerText: {
+  footerText: {
     fontSize: 16,
     color: '#7f8c8d',
   },
-  registerLink: {
+  footerLink: {
     fontSize: 16,
     color: '#3498db',
     fontWeight: '500',

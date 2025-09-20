@@ -41,6 +41,43 @@ export default function Plans() {
     return await AsyncStorage.getItem('authToken');
   };
 
+  const deletePlan = async (planId: string, planType: 'daily' | 'monthly') => {
+    Alert.alert(
+      'Planı Sil',
+      'Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        { 
+          text: 'Sil', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await getAuthToken();
+              if (!token) return;
+
+              const response = await fetch(`${BACKEND_URL}/api/plans/${planType}/${planId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+
+              if (response.ok) {
+                Alert.alert('Başarılı', 'Plan silindi');
+                loadPlans(); // Refresh plans
+              } else {
+                Alert.alert('Hata', 'Plan silinirken bir hata oluştu');
+              }
+            } catch (error) {
+              console.error('Plan silme hatası:', error);
+              Alert.alert('Hata', 'Bağlantı hatası');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const loadPlans = async () => {
     setIsLoading(true);
     try {

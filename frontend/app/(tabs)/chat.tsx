@@ -30,6 +30,7 @@ interface PlanPreview {
   ageBand?: string;
   theme?: string;
   activities?: Array<{title: string; location?: string; duration?: string}>;
+  fullPlanData?: any;  // Store full plan data from AI
 }
 
 export default function ChatScreen() {

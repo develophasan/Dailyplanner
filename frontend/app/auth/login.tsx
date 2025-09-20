@@ -24,7 +24,11 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Hata', 'E-posta ve şifre gereklidir.');
+      if (Platform.OS === 'web') {
+        alert('E-posta ve şifre gereklidir.');
+      } else {
+        Alert.alert('Hata', 'E-posta ve şifre gereklidir.');
+      }
       return;
     }
 
@@ -48,18 +52,31 @@ export default function Login() {
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
         
-        Alert.alert('Başarılı', 'Giriş başarılı!', [
-          {
-            text: 'Tamam',
-            onPress: () => router.replace('/(tabs)/chat'),
-          },
-        ]);
+        if (Platform.OS === 'web') {
+          alert('Giriş başarılı!');
+          router.replace('/(tabs)/chat');
+        } else {
+          Alert.alert('Başarılı', 'Giriş başarılı!', [
+            {
+              text: 'Tamam',
+              onPress: () => router.replace('/(tabs)/chat'),
+            },
+          ]);
+        }
       } else {
-        Alert.alert('Hata', data.detail || 'Giriş başarısız');
+        if (Platform.OS === 'web') {
+          alert(data.detail || 'Giriş başarısız');
+        } else {
+          Alert.alert('Hata', data.detail || 'Giriş başarısız');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Hata', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+      if (Platform.OS === 'web') {
+        alert('Bağlantı hatası. Lütfen tekrar deneyin.');
+      } else {
+        Alert.alert('Hata', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+      }
     } finally {
       setIsLoading(false);
     }

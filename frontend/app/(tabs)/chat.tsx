@@ -44,6 +44,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [currentResponse, setCurrentResponse] = useState<AIResponse | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {

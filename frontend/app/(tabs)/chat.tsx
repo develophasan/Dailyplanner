@@ -112,12 +112,13 @@ export default function ChatScreen() {
         setMessages(prev => [...prev, assistantMessage]);
 
         // If a plan was generated, show preview
-        if (data.finalize && data.type) {
+        if (data.finalize && data.planData) {
           setPlanPreview({
-            date: data.date,
-            ageBand: data.ageBand,
-            theme: data.theme,
-            activities: data.blocks?.activities?.slice(0, 3) || []
+            date: data.planData.date || new Date().toISOString().split('T')[0],
+            ageBand: data.planData.ageBand || '60_72',
+            theme: data.planData.theme || 'AI Destekli Plan',
+            activities: data.planData.activities?.slice(0, 3) || [],
+            fullPlanData: data.planData  // Store full plan data for saving
           });
         }
         

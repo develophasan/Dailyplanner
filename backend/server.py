@@ -636,6 +636,10 @@ async def generate_plan(request: PlanGenerateRequest, current_user: dict = Depen
         raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
 # Plan Routes
+@api_router.options("/plans/daily")
+async def plans_daily_options():
+    return {"message": "OK"}
+
 @api_router.post("/plans/daily")
 async def create_daily_plan(plan_data: DailyPlanCreate, current_user: dict = Depends(get_current_user)):
     try:

@@ -531,6 +531,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   actionContainer: {
+    flexDirection: 'row',
     padding: 16,
     paddingTop: 8,
     backgroundColor: 'white',

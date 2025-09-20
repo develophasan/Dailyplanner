@@ -113,13 +113,24 @@ export default function ChatScreen() {
         setMessages(prev => [...prev, assistantMessage]);
 
         // If a plan was generated, show preview
-        if (data.finalize && data.planData) {
+        if (data.finalize || (data.response && data.response.toLowerCase().includes('plan oluştur'))) {
+          // Extract plan data from the response
+          const planData = data.planData || data.extractedData || {
+            date: new Date().toISOString().split('T')[0],
+            ageBand: '60_72',
+            theme: data.theme || 'AI Destekli Plan',
+            activities: data.activities || []
+          };
+          
           setPlanPreview({
-            date: data.planData.date || new Date().toISOString().split('T')[0],
-            ageBand: data.planData.ageBand || '60_72',
-            theme: data.planData.theme || 'AI Destekli Plan',
-            activities: data.planData.activities?.slice(0, 3) || [],
-            fullPlanData: data.planData  // Store full plan data for saving
+            date: planData.date || new Date().toISOString().split('T')[0],
+            ageBand: planData.ageBand || '60_72',  
+            theme: planData.theme || 'AI Destekli Plan',
+            activities: planData.activities?.slice(0, 3) || [
+              { title: 'Sanat Etkinliği', location: 'Sanat merkezi', duration: '30 dakika' },
+              { title: 'Matematik Oyunu', location: 'Matematik merkezi', duration: '25 dakika' }
+            ],
+            fullPlanData: planData
           });
         }
         

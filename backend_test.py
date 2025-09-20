@@ -479,6 +479,237 @@ class MaarifPlannerTester:
             self.log_test("AI Chat Incomplete Info", False, f"Exception: {str(e)}")
         
         return False
+
+    def test_ai_comprehensive_plan_60_72_art_theme(self):
+        """TEST SCENARIO 1: Request comprehensive daily plan for 60-72 age group with art theme"""
+        if not self.auth_token:
+            self.log_test("AI Comprehensive Plan 60-72 Art Theme", False, "No auth token available")
+            return False
+            
+        payload = {
+            "message": "60-72 ay yaş grubu için sanat temalı kapsamlı günlük plan hazırla. Boyama, yaratıcı sanat çalışmaları, renk kavramı ve el becerilerini geliştiren etkinlikler dahil et. Detaylı malzeme listesi, adım adım yönergeler ve değerlendirme yöntemleri ile birlikte hazırla.",
+            "history": [],
+            "ageBand": "60_72",
+            "planType": "daily"
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.post(f"{self.base_url}/ai/chat", json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                self.log_test("AI Comprehensive Plan 60-72 Art Theme", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+            data = response.json()
+            print(f"\n🎨 ART THEME PLAN ANALYSIS:")
+            
+            # Specific validations for art theme
+            issues = []
+            
+            # Check if plan is finalized and complete
+            if not data.get("finalize"):
+                issues.append("Plan not finalized")
+            
+            # Check activities for art theme
+            blocks = data.get("blocks", {})
+            activities = blocks.get("activities", [])
+            
+            if len(activities) < 3:
+                issues.append(f"Insufficient activities: {len(activities)} (minimum 3 required)")
+            
+            art_related_count = 0
+            for activity in activities:
+                title = activity.get("title", "").lower()
+                materials = str(activity.get("materials", [])).lower()
+                if any(keyword in title or keyword in materials for keyword in ["sanat", "boyama", "renk", "yaratıcı", "çizim", "boya"]):
+                    art_related_count += 1
+            
+            if art_related_count == 0:
+                issues.append("No art-related activities found")
+            
+            print(f"   🎨 Art-related activities: {art_related_count}/{len(activities)}")
+            
+            # Validate detailed requirements
+            for i, activity in enumerate(activities):
+                materials = activity.get("materials", [])
+                steps = activity.get("steps", [])
+                
+                if len(materials) < 5 or len(materials) > 8:
+                    issues.append(f"Activity {i+1} materials count: {len(materials)} (should be 5-8)")
+                
+                if len(steps) < 6 or len(steps) > 10:
+                    issues.append(f"Activity {i+1} steps count: {len(steps)} (should be 6-10)")
+                
+                if not activity.get("duration"):
+                    issues.append(f"Activity {i+1} missing duration")
+                if not activity.get("objectives"):
+                    issues.append(f"Activity {i+1} missing objectives")
+                if not activity.get("differentiation"):
+                    issues.append(f"Activity {i+1} missing differentiation")
+            
+            if issues:
+                self.log_test("AI Comprehensive Plan 60-72 Art Theme", False, f"Issues: {'; '.join(issues)}")
+                return False
+            else:
+                self.log_test("AI Comprehensive Plan 60-72 Art Theme", True, f"Complete art-themed plan with {len(activities)} activities, {art_related_count} art-related")
+                return True
+                
+        except Exception as e:
+            self.log_test("AI Comprehensive Plan 60-72 Art Theme", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_ai_detailed_plan_math_language(self):
+        """TEST SCENARIO 2: Request detailed plan with math and language activities"""
+        if not self.auth_token:
+            self.log_test("AI Detailed Plan Math Language", False, "No auth token available")
+            return False
+            
+        payload = {
+            "message": "60-72 ay yaş grubu için matematik ve dil etkinlikleri içeren detaylı günlük plan hazırla. Sayı kavramı, geometrik şekiller, harf tanıma, dinleme becerileri ve kelime dağarcığı geliştirme odaklı. Her etkinlik için 5-8 malzeme, 6-10 adım, süre, hedefler ve bireysel farklılıklar için uyarlamalar dahil et.",
+            "history": [],
+            "ageBand": "60_72",
+            "planType": "daily"
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.post(f"{self.base_url}/ai/chat", json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                self.log_test("AI Detailed Plan Math Language", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+            data = response.json()
+            print(f"\n📚 MATH & LANGUAGE PLAN ANALYSIS:")
+            
+            issues = []
+            
+            # Check domain outcomes for math and language codes
+            domain_outcomes = data.get("domainOutcomes", [])
+            math_domains = [d for d in domain_outcomes if "MAB" in d.get("code", "")]
+            language_domains = [d for d in domain_outcomes if "TADB" in d.get("code", "")]
+            
+            print(f"   📊 Math domains (MAB): {len(math_domains)}")
+            print(f"   📝 Language domains (TADB): {len(language_domains)}")
+            
+            if len(math_domains) == 0:
+                issues.append("No mathematics domain outcomes (MAB) found")
+            if len(language_domains) == 0:
+                issues.append("No language domain outcomes (TADB) found")
+            
+            # Check activities for math and language content
+            blocks = data.get("blocks", {})
+            activities = blocks.get("activities", [])
+            
+            math_activities = 0
+            language_activities = 0
+            
+            for activity in activities:
+                title = activity.get("title", "").lower()
+                materials = str(activity.get("materials", [])).lower()
+                steps = str(activity.get("steps", [])).lower()
+                content = f"{title} {materials} {steps}"
+                
+                if any(keyword in content for keyword in ["matematik", "sayı", "geometri", "şekil", "sayma", "rakam"]):
+                    math_activities += 1
+                if any(keyword in content for keyword in ["dil", "harf", "kelime", "dinleme", "konuşma", "türkçe", "hikaye"]):
+                    language_activities += 1
+            
+            print(f"   🔢 Math-related activities: {math_activities}")
+            print(f"   📖 Language-related activities: {language_activities}")
+            
+            if math_activities == 0:
+                issues.append("No math-related activities found")
+            if language_activities == 0:
+                issues.append("No language-related activities found")
+            
+            if issues:
+                self.log_test("AI Detailed Plan Math Language", False, f"Issues: {'; '.join(issues)}")
+                return False
+            else:
+                self.log_test("AI Detailed Plan Math Language", True, f"Complete math & language plan: {math_activities} math, {language_activities} language activities")
+                return True
+                
+        except Exception as e:
+            self.log_test("AI Detailed Plan Math Language", False, f"Exception: {str(e)}")
+        
+        return False
+
+    def test_ai_response_structure_validation(self):
+        """TEST SCENARIO 3: Verify response structure matches enhanced template"""
+        if not self.auth_token:
+            self.log_test("AI Response Structure Validation", False, "No auth token available")
+            return False
+            
+        payload = {
+            "message": "60-72 ay yaş grubu için kapsamlı günlük plan hazırla. Tüm alanları detayca doldur.",
+            "history": [],
+            "ageBand": "60_72",
+            "planType": "daily"
+        }
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = requests.post(f"{self.base_url}/ai/chat", json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                self.log_test("AI Response Structure Validation", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+            data = response.json()
+            print(f"\n🏗️ STRUCTURE VALIDATION:")
+            
+            # Required top-level fields
+            required_fields = ["finalize", "type", "ageBand", "date", "domainOutcomes", "blocks"]
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                self.log_test("AI Response Structure Validation", False, f"Missing required fields: {', '.join(missing_fields)}")
+                return False
+            
+            # Check blocks structure
+            blocks = data.get("blocks", {})
+            required_block_fields = ["startOfDay", "activities", "assessment"]
+            missing_block_fields = [field for field in required_block_fields if field not in blocks]
+            
+            if missing_block_fields:
+                self.log_test("AI Response Structure Validation", False, f"Missing blocks fields: {', '.join(missing_block_fields)}")
+                return False
+            
+            # Validate activities structure
+            activities = blocks.get("activities", [])
+            if not activities:
+                self.log_test("AI Response Structure Validation", False, "Empty activities array")
+                return False
+            
+            activity_structure_issues = []
+            for i, activity in enumerate(activities):
+                required_activity_fields = ["title", "location", "materials", "steps", "mapping"]
+                missing_activity_fields = [field for field in required_activity_fields if field not in activity]
+                if missing_activity_fields:
+                    activity_structure_issues.append(f"Activity {i+1} missing: {', '.join(missing_activity_fields)}")
+            
+            if activity_structure_issues:
+                self.log_test("AI Response Structure Validation", False, f"Activity structure issues: {'; '.join(activity_structure_issues)}")
+                return False
+            
+            # Check optional but recommended fields
+            optional_fields = ["conceptualSkills", "dispositions", "crossComponents", "contentFrame"]
+            present_optional = [field for field in optional_fields if field in data and data[field]]
+            
+            print(f"   ✅ Required fields: All present")
+            print(f"   📋 Activities: {len(activities)} with complete structure")
+            print(f"   🎯 Optional fields present: {len(present_optional)}/{len(optional_fields)}")
+            
+            self.log_test("AI Response Structure Validation", True, f"Complete structure with {len(activities)} activities, {len(present_optional)} optional fields")
+            return True
+                
+        except Exception as e:
+            self.log_test("AI Response Structure Validation", False, f"Exception: {str(e)}")
+        
+        return False
     
     def test_daily_plans_create(self):
         """Test creating a daily plan"""

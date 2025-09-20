@@ -119,18 +119,20 @@ export default function PlanDetail() {
   };
 
   const handleDeletePlan = () => {
-    Alert.alert(
-      'Planı Sil',
-      'Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
-      [
-        { text: 'İptal', style: 'cancel' },
-        { 
-          text: 'Sil', 
-          style: 'destructive',
-          onPress: deletePlan
-        }
-      ]
-    );
+    const confirmDelete = Platform.OS === 'web' 
+      ? confirm('Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')
+      : Alert.alert(
+          'Planı Sil',
+          'Bu planı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+          [
+            { text: 'İptal', style: 'cancel' },
+            { text: 'Sil', style: 'destructive', onPress: deletePlan }
+          ]
+        );
+
+    if (Platform.OS === 'web' && confirmDelete) {
+      deletePlan();
+    }
   };
 
   const deletePlan = async () => {

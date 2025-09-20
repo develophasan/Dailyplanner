@@ -1296,8 +1296,8 @@ class MaarifPlannerTester:
     
     def run_all_tests(self):
         """Run all backend tests in order"""
-        print("🚀 Starting MaarifPlanner Backend API Tests")
-        print("=" * 50)
+        print("🚀 Starting MaarifPlanner Backend API Tests - NEW DEVELOPMENTS FOCUS")
+        print("=" * 70)
         
         # High Priority Tests
         print("\n📋 HIGH PRIORITY TESTS:")
@@ -1308,6 +1308,17 @@ class MaarifPlannerTester:
         self.test_daily_plans_create()
         self.test_daily_plans_list()
         self.test_daily_plans_get_by_id()
+        
+        # NEW DEVELOPMENTS TESTS (as requested in review)
+        print("\n🆕 NEW DEVELOPMENTS TESTS (Review Request Focus):")
+        print("   Testing AI Chat improvements, Plan Delete APIs, and Portfolio APIs")
+        self.test_ai_chat_automatic_date_usage()
+        self.test_ai_chat_automatic_age_usage()
+        self.test_daily_plan_delete()
+        self.test_monthly_plan_delete()
+        self.test_portfolio_photo_upload()
+        self.test_portfolio_photos_get()
+        self.test_portfolio_photo_delete()
         
         # CRITICAL AI CONTENT QUALITY TESTS (as requested in review)
         print("\n🎯 CRITICAL AI CONTENT QUALITY TESTS (Review Request):")
@@ -1325,7 +1336,7 @@ class MaarifPlannerTester:
         self.test_matrix_search()
         
         # Summary
-        print("\n" + "=" * 50)
+        print("\n" + "=" * 70)
         print("📊 TEST SUMMARY:")
         
         passed = sum(1 for result in self.test_results if result["success"])
@@ -1333,6 +1344,24 @@ class MaarifPlannerTester:
         
         print(f"✅ Passed: {passed}/{total}")
         print(f"❌ Failed: {total - passed}/{total}")
+        
+        # Separate NEW DEVELOPMENTS results
+        new_dev_tests = [
+            "AI Chat Automatic Date Usage",
+            "AI Chat Automatic Age Usage", 
+            "Daily Plan Delete",
+            "Monthly Plan Delete",
+            "Portfolio Photo Upload",
+            "Portfolio Photos Get",
+            "Portfolio Photo Delete"
+        ]
+        
+        new_dev_passed = sum(1 for result in self.test_results if result["test"] in new_dev_tests and result["success"])
+        new_dev_total = sum(1 for result in self.test_results if result["test"] in new_dev_tests)
+        
+        print(f"\n🆕 NEW DEVELOPMENTS SUMMARY:")
+        print(f"✅ New Features Passed: {new_dev_passed}/{new_dev_total}")
+        print(f"❌ New Features Failed: {new_dev_total - new_dev_passed}/{new_dev_total}")
         
         if total - passed > 0:
             print("\n🔍 FAILED TESTS:")

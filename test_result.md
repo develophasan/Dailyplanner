@@ -231,11 +231,11 @@ frontend:
 
   - task: "AI Chat Interface"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/app/(tabs)/chat.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -249,6 +249,9 @@ frontend:
       - working: true
         agent: "main"
         comment: "FIXED: Complete plan saving and preview functionality working. Fixed date validation, ageBand validation, and planJson structure cleaning. Backend logs show successful plan creation with 200 OK responses. Preview modal implemented with detailed plan display."
+      - working: false
+        agent: "user"
+        comment: "User reports: Oluşturulan planda yalnızca yaş grubu tarih bilgileri var diğer içerikler boş dönüyor aiden gelen cevap - AI response incomplete, missing activities and assessment content"
 
   - task: "Plans List and Detail View"
     implemented: true

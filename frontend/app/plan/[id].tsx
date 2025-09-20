@@ -275,38 +275,49 @@ export default function PlanDetail() {
   };
 
   const deletePortfolioPhoto = async (photoId: string) => {
-    Alert.alert(
-      'Fotoğrafı Sil',
-      'Bu fotoğrafı silmek istediğinizden emin misiniz?',
-      [
-        { text: 'İptal', style: 'cancel' },
-        { 
-          text: 'Sil', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await getAuthToken();
-              if (!token) return;
+    const confirmDelete = Platform.OS === 'web' 
+      ? confirm('Bu fotoğrafı silmek istediğinizden emin misiniz?')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Fotoğrafı Sil',
+            'Bu fotoğrafı silmek istediğinizden emin misiniz?',
+            [
+              { text: 'İptal', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Sil', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
 
-              const response = await fetch(`${BACKEND_URL}/api/portfolio/${photoId}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
+    if (!confirmDelete) return;
 
-              if (response.ok) {
-                loadPortfolioPhotos(); // Refresh portfolio
-              } else {
-                Alert.alert('Hata', 'Fotoğraf silinirken bir hata oluştu');
-              }
-            } catch (error) {
-              console.error('Portfolio photo delete error:', error);
-            }
-          }
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${BACKEND_URL}/api/portfolio/${photoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        loadPortfolioPhotos(); // Refresh portfolio
+      } else {
+        if (Platform.OS === 'web') {
+          alert('Fotoğraf silinirken bir hata oluştu');
+        } else {
+          Alert.alert('Hata', 'Fotoğraf silinirken bir hata oluştu');
         }
-      ]
-    );
+      }
+    } catch (error) {
+      console.error('Portfolio photo delete error:', error);
+      if (Platform.OS === 'web') {
+        alert('Bağlantı hatası');
+      } else {
+        Alert.alert('Hata', 'Bağlantı hatası');
+      }
+    }
   };
 
   const renderOverview = () => {

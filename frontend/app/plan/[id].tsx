@@ -672,6 +672,10 @@ export default function PlanDetail() {
                 style={[styles.uploadButton, isUploading && styles.disabledButton]}
                 onPress={pickImage}
                 disabled={isUploading}
+                accessibilityRole="button"
+                {...(Platform.OS === 'web' && {
+                  onClick: pickImage
+                })}
               >
                 {isUploading ? (
                   <ActivityIndicator size="small" color="#fff" />

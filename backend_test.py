@@ -589,10 +589,16 @@ class MaarifPlannerTester:
         self.test_auth_register()
         self.test_auth_login()
         self.test_auth_me()
-        self.test_ai_chat()
+        self.test_ai_chat_basic()
         self.test_daily_plans_create()
         self.test_daily_plans_list()
         self.test_daily_plans_get_by_id()
+        
+        # CRITICAL AI CONTENT QUALITY TESTS (as requested in review)
+        print("\n🎯 CRITICAL AI CONTENT QUALITY TESTS:")
+        self.test_ai_chat_content_completeness()
+        self.test_ai_chat_multiple_calls_consistency()
+        self.test_ai_chat_incomplete_info_handling()
         
         # Medium Priority Tests
         print("\n📋 MEDIUM PRIORITY TESTS:")

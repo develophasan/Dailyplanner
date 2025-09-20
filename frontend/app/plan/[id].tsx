@@ -169,7 +169,22 @@ export default function PlanDetail() {
 
   const pickImage = async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Bilgi', 'Web sürümünde fotoğraf yükleme özelliği henüz desteklenmiyor');
+      // Web için HTML file input kullan
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (event: any) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            const base64 = e.target.result.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+            uploadPhoto(base64);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
       return;
     }
 

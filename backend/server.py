@@ -81,6 +81,12 @@ class MonthlyPlanCreate(BaseModel):
     planJson: Dict[str, Any]
     title: Optional[str] = None
 
+class PortfolioPhotoCreate(BaseModel):
+    planId: str
+    activityTitle: str
+    photoBase64: str
+    description: Optional[str] = None
+
 # Utility functions
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()

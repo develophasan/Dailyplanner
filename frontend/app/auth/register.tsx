@@ -226,6 +226,10 @@ export default function Register() {
               style={[styles.registerButton, isLoading && styles.disabledButton]}
               onPress={handleRegister}
               disabled={isLoading}
+              accessibilityRole={Platform.OS === 'web' ? 'button' : undefined}
+              {...(Platform.OS === 'web' && {
+                onClick: handleRegister
+              })}
             >
               <Text style={styles.registerButtonText}>
                 {isLoading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}

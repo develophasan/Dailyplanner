@@ -39,7 +39,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": process.env.EXPO_PUBLIC_BACKEND_URL
+      "EXPO_PUBLIC_BACKEND_URL": "https://dailyplanner-8.preview.emergentagent.com"
     }
   }
 }

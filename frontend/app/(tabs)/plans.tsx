@@ -120,12 +120,15 @@ export default function PlansScreen() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Plans loaded successfully:', data.length, 'plans');
         setPlans(data);
       } else if (response.status === 401) {
         Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
         router.replace('/auth/login');
       } else {
-        console.error('Failed to load plans:', response.status);
+        console.error('Failed to load plans:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Error loading plans:', error);

@@ -886,13 +886,14 @@ async def delete_portfolio_photo(photo_id: str, current_user: dict = Depends(get
 # Include router in app
 app.include_router(api_router)
 
-# CORS
+# CORS - Fixed for mobile access
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=["*"],
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Logging
